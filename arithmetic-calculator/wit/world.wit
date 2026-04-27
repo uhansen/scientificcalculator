@@ -1,0 +1,12 @@
+package docs:arithmetic-calculator@0.1.0;
+
+interface arithmetic {
+    add: func(x: f64, y: f64) -> f64;
+    subtract: func(x: f64, y: f64) -> f64;
+    multiply: func(x: f64, y: f64) -> f64;
+    divide: func(x: f64, y: f64) -> result<f64, string>;
+}
+
+world calculator {
+    export arithmetic;
+}

@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "arithmetic-calculator",
+    "trigonometric-calculator",
+]
+resolver = "2"
