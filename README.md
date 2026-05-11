@@ -2,6 +2,15 @@
 
 WebAssembly components built in Rust, TypeScript, C#, and Python, following the [Bytecode Alliance guides](https://component-model.bytecodealliance.org/language-support/).
 
+| Component | Language | Interface |
+|---|---|---|
+| `arithmetic-calculator` | Rust | `add` `subtract` `multiply` `divide` |
+| `trigonometric-calculator` | Rust | `sin` `cos` `tan` `arctan` |
+| `moddiv` | TypeScript | `mod` `div` |
+| `logaritmic-calculater` | C# / .NET 10 | `e` `ln` |
+| `statistics-calculator` | Python | `sum` `avg` |
+| `the-calculater` | Composed (all 5) | `calculate(string) → string` |
+
 ## Components
 
 ### `the-calculater` (Rust shell — composed from all five sub-components)
