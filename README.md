@@ -120,6 +120,48 @@ cd statistics-calculator
 componentize-py --wit-path wit/component.wit --world statistics-calculator componentize app -o statistics-calculator.wasm
 ```
 
+## Run with wasmtime
+
+Requires [wasmtime](https://wasmtime.dev/) ≥ 18. Arguments use [WAVE syntax](https://github.com/bytecodealliance/wasm-tools/tree/main/crates/wasm-wave#readme) — the function call and its arguments are passed as a single quoted string.
+
+### `the-calculater` (composed component)
+
+```sh
+# Arithmetic
+wasmtime run --invoke 'calculate("add(2,2)")' the-calculater/the-calculater.wasm
+wasmtime run --invoke 'calculate("subtract(10,3)")' the-calculater/the-calculater.wasm
+wasmtime run --invoke 'calculate("multiply(6,7)")' the-calculater/the-calculater.wasm
+wasmtime run --invoke 'calculate("divide(9,3)")' the-calculater/the-calculater.wasm
+
+# Trigonometric (degrees)
+wasmtime run --invoke 'calculate("sin(90)")' the-calculater/the-calculater.wasm
+wasmtime run --invoke 'calculate("cos(0)")' the-calculater/the-calculater.wasm
+wasmtime run --invoke 'calculate("tan(45)")' the-calculater/the-calculater.wasm
+wasmtime run --invoke 'calculate("arctan(1)")' the-calculater/the-calculater.wasm
+
+# Modulo / integer division
+wasmtime run --invoke 'calculate("mod(10,3)")' the-calculater/the-calculater.wasm
+wasmtime run --invoke 'calculate("div(10,3)")' the-calculater/the-calculater.wasm
+
+# Logarithmic
+wasmtime run --invoke 'calculate("e()")' the-calculater/the-calculater.wasm
+wasmtime run --invoke 'calculate("ln(2.718281828)")' the-calculater/the-calculater.wasm
+
+# Statistics (variable number of arguments)
+wasmtime run --invoke 'calculate("sum(1,2,3,4,5)")' the-calculater/the-calculater.wasm
+wasmtime run --invoke 'calculate("avg(1,2,3,4,5)")' the-calculater/the-calculater.wasm
+```
+
+Errors are returned as strings:
+
+```sh
+wasmtime run --invoke 'calculate("divide(5,0)")' the-calculater/the-calculater.wasm
+# → "Error: division by zero"
+
+wasmtime run --invoke 'calculate("unknown(1)")' the-calculater/the-calculater.wasm
+# → "Error: Unknown function: 'unknown'"
+```
+
 ## Inspect
 
 ```sh
