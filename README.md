@@ -331,3 +331,18 @@ curl "http://127.0.0.1:3000/?expr=ln(2.718281828)"  # → ~1
 curl "http://127.0.0.1:3000/?expr=sum(1,2,3,4,5)"  # → 15
 curl "http://127.0.0.1:3000/?expr=avg(1,2,3,4,5)"  # → 3
 ```
+
+## WASM Binary Sizes
+
+| File | Size | Notes |
+|---|---|---|
+| `target/wasm32-wasip2/release/trigonometric_calculator.wasm` | 27 KB | Rust — no runtime overhead |
+| `target/wasm32-wasip2/release/arithmetic_calculator.wasm` | 66 KB | Rust — no runtime overhead |
+| `target/wasm32-wasip2/release/thecalculaterspin.wasm` | 262 KB | Spin HTTP shell (before composition) |
+| `logaritmic-calculater/bin/Release/net10.0/wasi-wasm/native/logaritmic-calculater.wasm` | 2.5 MB | C# / .NET 10 |
+| `moddiv/moddiv.wasm` | 12 MB | TypeScript — embeds StarlingMonkey JS engine |
+| `statistics-calculator/statistics-calculator.wasm` | 18 MB | Python — embeds CPython runtime |
+| `the-calculater/the-calculater.wasm` | 32 MB | Composed: all 5 sub-components bundled |
+| `thecalculaterspin/thecalculaterspin-composed.wasm` | 32 MB | Composed Spin app (Spin shell + the-calculater) |
+
+> The size difference between languages is mainly due to embedded runtimes: Rust compiles directly to WASM with no runtime, while TypeScript (SpiderMonkey/StarlingMonkey) and Python (CPython) must bundle their interpreters inside the component.
