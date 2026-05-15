@@ -16,3 +16,8 @@ statistics-calculator/poll_loop.py
 # Spin app build artifacts
 thecalculaterspin/thecalculaterspin-composed.wasm
 thecalculaterspin/.spin/
+
+# Spin binary (too large for GitHub)
+spin
+spin.sig
+crt.pem

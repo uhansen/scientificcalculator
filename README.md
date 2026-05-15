@@ -62,7 +62,7 @@ Exports a `statistics` interface with:
 - `avg(numbers: list<f64>) -> f64` — arithmetic mean (returns 0.0 for empty list)
 
 ### `thecalculaterspin` (Rust, Spin v4 HTTP app)
-An HTTP application built with [Spin](https://spinframework.dev) that wraps `the-calculater` and exposes it over HTTP. Expressions are passed as a `?expr=` query parameter or as a plain-text POST body; results are returned as plain text.
+An HTTP application built with [Spin](https://spinframework.dev) that wraps `the-calculater` and exposes it over HTTP. Send a GET request with an `?expr=` query parameter; the result is returned as plain text.
 
 ## Prerequisites
 
@@ -263,7 +263,7 @@ wasmtime run --invoke 'calculate("unknown(1)")' the-calculater/the-calculater.wa
 
 ## Run with Spin (`thecalculaterspin`)
 
-`thecalculaterspin` is a Spin v4 HTTP application that exposes `the-calculater` as an HTTP endpoint. Send a calculator expression via `?expr=` query parameter or as a plain-text POST body.
+`thecalculaterspin` is a Spin v4 HTTP application that exposes `the-calculater` as an HTTP endpoint. Send a GET request with a `?expr=` query parameter; the result is returned as plain text.
 
 ### Prerequisites
 
@@ -330,7 +330,4 @@ curl "http://127.0.0.1:3000/?expr=ln(2.718281828)"  # → ~1
 # Statistics
 curl "http://127.0.0.1:3000/?expr=sum(1,2,3,4,5)"  # → 15
 curl "http://127.0.0.1:3000/?expr=avg(1,2,3,4,5)"  # → 3
-
-# POST body (URL-encoded expression as plain text)
-curl -X POST "http://127.0.0.1:3000/" --data "multiply(6,7)"  # → 42
 ```

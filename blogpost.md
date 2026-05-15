@@ -215,10 +215,10 @@ async fn handle(req: Request) -> impl IntoResponse {
 
 `wit_bindgen::generate!` reads the local WIT file that declares the import of `docs:the-calculater/calculator@0.1.0`, and generates the Rust bindings. The `calculate()` call looks like a normal function call — the Component Model handles the rest.
 
-Expressions can arrive as a `?expr=` query parameter or as a plain-text POST body:
+Expressions are passed as a `?expr=` query parameter on GET requests:
 
 ```rust
-async fn get_expr(req: Request) -> String {
+fn get_expr(req: &Request) -> String {
     if let Some(query) = req.uri().query() {
         for pair in query.split('&') {
             if let Some(value) = pair.strip_prefix("expr=") {
@@ -226,8 +226,7 @@ async fn get_expr(req: Request) -> String {
             }
         }
     }
-    let bytes = req.into_body().bytes().await.unwrap_or_default();
-    String::from_utf8_lossy(&bytes).trim().to_string()
+    String::new()
 }
 ```
 
@@ -274,9 +273,6 @@ curl "http://127.0.0.1:3000/?expr=ln(2.718281828)"  # → ~1
 # Statistics
 curl "http://127.0.0.1:3000/?expr=sum(1,2,3,4,5)"  # → 15
 curl "http://127.0.0.1:3000/?expr=avg(1,2,3,4,5)"  # → 3
-
-# POST body
-curl -X POST "http://127.0.0.1:3000/" --data "multiply(6,7)"  # → 42
 ```
 
 ### What this demonstrates
