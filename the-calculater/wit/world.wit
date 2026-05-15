@@ -1,15 +1,15 @@
-package docs:the-calculater@0.1.0;
+package buildbyhansen:the-calculater@0.1.0;
 
 interface calculator {
     calculate: func(expr: string) -> string;
 }
 
 world the-calculater {
-    import docs:arithmetic-calculator/arithmetic@0.1.0;
-    import docs:trigonometric-calculator/trigonometric@0.1.0;
-    import docs:moddiv/moddiv@0.1.0;
-    import docs:logaritmic-calculater/logaritmic@0.1.0;
-    import docs:statistics-calculator/statistics@0.1.0;
+    import buildbyhansen:arithmetic-calculator/arithmetic@0.1.0;
+    import buildbyhansen:trigonometric-calculator/trigonometric@0.1.0;
+    import buildbyhansen:moddiv/moddiv@0.1.0;
+    import buildbyhansen:logaritmic-calculater/logaritmic@0.1.0;
+    import buildbyhansen:statistics-calculator/statistics@0.1.0;
 
     export calculator;
 }

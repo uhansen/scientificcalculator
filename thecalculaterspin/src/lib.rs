@@ -32,7 +32,7 @@ async fn handle(req: Request) -> impl IntoResponse {
         );
     }
 
-    let result = docs::the_calculater::calculator::calculate(&expr);
+    let result = buildbyhansen::the_calculater::calculator::calculate(&expr);
     (StatusCode::OK, result)
 }
 

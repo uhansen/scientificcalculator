@@ -1,4 +1,4 @@
-namespace LogaritmicCalculaterWorld.wit.exports.docs.logaritmicCalculater.v0_1_0;
+namespace LogaritmicCalculaterWorld.wit.exports.buildbyhansen.logaritmicCalculater.v0_1_0;
 
 public class LogaritmicImpl : ILogaritmic
 {

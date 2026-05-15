@@ -11,7 +11,7 @@ mod bindings {
 
 struct TrigCalculator;
 
-impl bindings::exports::docs::trigonometric_calculator::trigonometric::Guest for TrigCalculator {
+impl bindings::exports::buildbyhansen::trigonometric_calculator::trigonometric::Guest for TrigCalculator {
     fn sin(degrees: f64) -> f64 {
         (degrees * PI / 180.0).sin()
     }

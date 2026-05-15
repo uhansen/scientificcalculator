@@ -1,4 +1,4 @@
-package docs:moddiv@0.1.0;
+package buildbyhansen:moddiv@0.1.0;
 
 interface moddiv {
     mod: func(x: f64, y: f64) -> f64;

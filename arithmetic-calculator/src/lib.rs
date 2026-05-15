@@ -9,7 +9,7 @@ mod bindings {
 
 struct Calculator;
 
-impl bindings::exports::docs::arithmetic_calculator::arithmetic::Guest for Calculator {
+impl bindings::exports::buildbyhansen::arithmetic_calculator::arithmetic::Guest for Calculator {
     fn add(x: f64, y: f64) -> f64 {
         x + y
     }

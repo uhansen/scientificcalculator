@@ -1,4 +1,4 @@
-package docs:logaritmic-calculater@0.1.0;
+package buildbyhansen:logaritmic-calculater@0.1.0;
 
 interface logaritmic {
     e: func() -> f64;

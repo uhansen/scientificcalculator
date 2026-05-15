@@ -1,4 +1,4 @@
-package docs:arithmetic-calculator@0.1.0;
+package buildbyhansen:arithmetic-calculator@0.1.0;
 
 interface arithmetic {
     add: func(x: f64, y: f64) -> f64;

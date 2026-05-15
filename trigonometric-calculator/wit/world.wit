@@ -1,4 +1,4 @@
-package docs:trigonometric-calculator@0.1.0;
+package buildbyhansen:trigonometric-calculator@0.1.0;
 
 interface trigonometric {
     sin: func(degrees: f64) -> f64;

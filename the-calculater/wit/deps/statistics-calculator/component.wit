@@ -1,4 +1,4 @@
-package docs:statistics-calculator@0.1.0;
+package buildbyhansen:statistics-calculator@0.1.0;
 
 interface statistics {
     sum: func(numbers: list<f64>) -> f64;

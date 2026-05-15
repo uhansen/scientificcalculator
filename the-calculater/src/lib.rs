@@ -5,15 +5,15 @@ wit_bindgen::generate!({
     generate_all,
 });
 
-use docs::arithmetic_calculator::arithmetic as arith;
-use docs::logaritmic_calculater::logaritmic as log;
-use docs::moddiv::moddiv as md;
-use docs::statistics_calculator::statistics as stats;
-use docs::trigonometric_calculator::trigonometric as trig;
+use buildbyhansen::arithmetic_calculator::arithmetic as arith;
+use buildbyhansen::logaritmic_calculater::logaritmic as log;
+use buildbyhansen::moddiv::moddiv as md;
+use buildbyhansen::statistics_calculator::statistics as stats;
+use buildbyhansen::trigonometric_calculator::trigonometric as trig;
 
 struct Component;
 
-impl exports::docs::the_calculater::calculator::Guest for Component {
+impl exports::buildbyhansen::the_calculater::calculator::Guest for Component {
     fn calculate(expr: String) -> String {
         match parse_and_dispatch(&expr) {
             Ok(result) => result,
