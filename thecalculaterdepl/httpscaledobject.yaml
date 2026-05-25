@@ -1,0 +1,27 @@
+# HTTPScaledObject enables KEDA HTTP Add-on scale-to-zero for thecalculaterspin.
+#
+# Traffic flow (when scaled to zero):
+#   Ingress → thecalculaterspin-proxy (ExternalName)
+#     → keda-add-ons-http-interceptor-proxy.keda:8080  (buffers request + triggers scale-up)
+#       → thecalculaterspin:80  (once pod is ready)
+apiVersion: http.keda.sh/v1alpha1
+kind: HTTPScaledObject
+metadata:
+  name: thecalculaterspin
+  namespace: default
+spec:
+  hosts:
+    - "localhost"
+  scalingMetric:
+    concurrency:
+      targetValue: 10
+  scaleTargetRef:
+    name: thecalculaterspin
+    kind: Deployment
+    apiVersion: apps/v1
+    service: thecalculaterspin
+    port: 80
+  replicas:
+    min: 1
+    max: 5
+  scaledownPeriod: 60

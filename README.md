@@ -332,6 +332,95 @@ curl "http://127.0.0.1:3000/?expr=sum(1,2,3,4,5)"  # → 15
 curl "http://127.0.0.1:3000/?expr=avg(1,2,3,4,5)"  # → 3
 ```
 
+## Deploy on k3d / SpinKube (local Kubernetes)
+
+The `thecalculaterdepl/` folder contains everything needed to run `thecalculaterspin` on a local [k3d](https://k3d.io) cluster with [SpinKube](https://www.spinkube.dev) and [KEDA](https://keda.sh) HTTP autoscaling.
+
+### How it works
+
+```
+curl localhost:3000
+  → Traefik (k3d port 3000→80)
+    → KEDA HTTP interceptor proxy  ← buffers requests, triggers scale-up
+      → thecalculaterspin (SpinApp pod, wasmtime-spin-v2 runtime)
+```
+
+KEDA HTTP Add-on watches incoming request volume and scales the deployment between 1 and 5 replicas. After 60 s of inactivity, replicas return to 1.
+
+### Prerequisites
+
+| Tool | Version | Install |
+|---|---|---|
+| [k3d](https://k3d.io) | ≥ 5.0 | `brew install k3d` / [k3d.io](https://k3d.io/#installation) |
+| [kubectl](https://kubernetes.io/docs/tasks/tools/) | any | `brew install kubectl` |
+| [Helm](https://helm.sh) | ≥ 3.0 | `brew install helm` |
+| [Spin CLI](https://spinframework.dev/install) | ≥ 3.6 | `curl -fsSL https://spinframework.dev/downloads/install.sh \| bash` |
+| Docker (Docker Desktop / Rancher Desktop / OrbStack) | running | required by k3d |
+
+### Deploy
+
+```sh
+# From the repo root — one command does everything:
+bash thecalculaterdepl/deploy.sh
+```
+
+The script performs these steps in order:
+
+1. **Push image** — `spin registry push ttl.sh/thecalculaterspin:24h` (free ephemeral registry, no auth)
+2. **Create cluster** — k3d cluster using `ghcr.io/spinframework/containerd-shim-spin/k3d:v0.24.0` (Spin shim pre-installed, no extra operator needed)
+3. **cert-manager** v1.16.3 — required by spin-operator webhooks
+4. **spin-operator** v0.6.1 — SpinApp CRD controller
+5. **RuntimeClass + ShimExecutor** — wire the containerd shim into Kubernetes scheduling
+6. **KEDA** 2.19.0 — core autoscaler
+7. **KEDA HTTP Add-on** 0.14.0 — `HTTPScaledObject` CRD + interceptor proxy
+8. **SpinApp + Ingress** — deploys the app and routes Traefik through the KEDA interceptor
+9. **HTTPScaledObject** — configures autoscaling (min=1, max=5, scaledownPeriod=60s)
+10. **Patch Traefik** — enables ExternalName service backends (required for the interceptor route)
+
+### Test
+
+```sh
+curl "http://localhost:3000/?expr=add(2,3)"       # → 5
+curl "http://localhost:3000/?expr=multiply(6,7)"  # → 42
+curl "http://localhost:3000/?expr=sin(30)"         # → 0.5
+```
+
+### Check autoscaling
+
+```sh
+# Current state of the HTTPScaledObject
+kubectl get httpscaledobject thecalculaterspin
+
+# Watch pods scale up under load
+kubectl get pods -n default -w
+
+# Watch the underlying ScaledObject / HPA
+kubectl get scaledobject -n default
+kubectl get hpa -n default
+```
+
+### Tear down
+
+```sh
+bash thecalculaterdepl/teardown.sh
+```
+
+### Files
+
+| File | Purpose |
+|---|---|
+| `thecalculaterdepl/deploy.sh` | Full end-to-end deploy script |
+| `thecalculaterdepl/teardown.sh` | Delete the cluster |
+| `thecalculaterdepl/k3d-config.yaml` | k3d cluster spec (shim node image, port 3000→80) |
+| `thecalculaterdepl/spinapp.yaml` | SpinApp CR + ExternalName proxy Service + Traefik Ingress |
+| `thecalculaterdepl/httpscaledobject.yaml` | KEDA HTTPScaledObject (min=1 → max=5) |
+
+### Notes
+
+- **ttl.sh images expire after 24 h.** Re-run `deploy.sh` (or just `spin registry push ttl.sh/thecalculaterspin:24h` + `kubectl rollout restart deployment/thecalculaterspin`) when the image expires.
+- **min=1 (not 0):** The spin-operator reconciles `replicas: 1` from the SpinApp spec. Setting `min: 1` in the `HTTPScaledObject` keeps both controllers in agreement. True scale-to-zero would require removing the `replicas` field from the SpinApp and is not yet supported cleanly by spin-operator v0.6.1.
+- The cluster uses Spin shim **v0.24.0** (Spin 3.6.3 / wasmtime 42). The app was built with spin-sdk 5.2.0 (Spin 3.6.1 series) — compatible.
+
 ## WASM Binary Sizes
 
 | File | Size | Notes |
