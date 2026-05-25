@@ -1,4 +1,4 @@
-import type * as ModdivInterface from "./types/interfaces/docs-moddiv-moddiv.js";
+import type * as ModdivInterface from "./types/interfaces/buildbyhansen-moddiv-moddiv.js";
 
 type ModdivExport = typeof ModdivInterface;
 

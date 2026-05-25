@@ -1,5 +1,6 @@
-use spin_sdk::http::{IntoResponse, Method, Request, StatusCode};
-use spin_sdk::{http_service, wit_bindgen};
+use anyhow::Result;
+use spin_sdk::http::{IntoResponse, Method, Request, Response};
+use spin_sdk::http_component;
 
 wit_bindgen::generate!({
     path: "wit",
@@ -9,17 +10,17 @@ wit_bindgen::generate!({
 
 /// HTTP handler: GET /?expr=<expression>
 /// Delegates to the-calculater composed component and returns the result.
-#[http_service]
-async fn handle(req: Request) -> impl IntoResponse {
-    if req.method() != Method::GET {
-        return (StatusCode::METHOD_NOT_ALLOWED, "Only GET is supported\n".to_string());
+#[http_component]
+fn handle(req: Request) -> Result<impl IntoResponse> {
+    if req.method() != &Method::Get {
+        return Ok(Response::new(405, "Only GET is supported\n"));
     }
 
     let expr = get_expr(&req);
 
     if expr.is_empty() {
-        return (
-            StatusCode::OK,
+        return Ok(Response::new(
+            200,
             "Missing expression.\n\
              Usage: GET /?expr=<expression>\n\
              Examples:\n\
@@ -27,21 +28,20 @@ async fn handle(req: Request) -> impl IntoResponse {
              - sin(30)     cos(45)           tan(60)          arctan(1)\n\
              - mod(10,3)   div(10,3)\n\
              - e()         ln(2.718)\n\
-             - sum(1,2,3)  avg(4,5,6)\n"
-                .to_string(),
-        );
+             - sum(1,2,3)  avg(4,5,6)\n",
+        ));
     }
 
     let result = buildbyhansen::the_calculater::calculator::calculate(&expr);
-    (StatusCode::OK, result)
+    Ok(Response::new(200, result))
 }
 
 fn get_expr(req: &Request) -> String {
-    if let Some(query) = req.uri().query() {
-        for pair in query.split('&') {
-            if let Some(value) = pair.strip_prefix("expr=") {
-                return urlencoded_decode(value);
-            }
+    let uri = req.uri();
+    let query = uri.split('?').nth(1).unwrap_or("");
+    for pair in query.split('&') {
+        if let Some(value) = pair.strip_prefix("expr=") {
+            return urlencoded_decode(value);
         }
     }
     String::new()
