@@ -6,6 +6,7 @@ spec:
   image: "ttl.sh/thecalculaterspin:24h"
   replicas: 1
   executor: containerd-shim-spin
+  imagePullPolicy: Always
 ---
 # ExternalName service that routes to the KEDA HTTP interceptor proxy.
 # The Ingress sends traffic here so the interceptor can apply scale-to-zero.

@@ -62,7 +62,7 @@ Exports a `statistics` interface with:
 - `avg(numbers: list<f64>) -> f64` — arithmetic mean (returns 0.0 for empty list)
 
 ### `thecalculaterspin` (Rust, Spin v4 HTTP app)
-An HTTP application built with [Spin](https://spinframework.dev) that wraps `the-calculater` and exposes it over HTTP. Send a GET request with an `?expr=` query parameter; the result is returned as plain text.
+An HTTP application built with [Spin](https://spinframework.dev) that wraps `the-calculater` and exposes it over HTTP. Send a GET request with an `?calculate=` query parameter; the result is returned as plain text.
 
 ## Prerequisites
 
@@ -209,9 +209,9 @@ spin up --listen 127.0.0.1:3000
 
 Test in another terminal:
 ```sh
-curl "http://127.0.0.1:3000/?expr=add(2,3)"      # → 5
-curl "http://127.0.0.1:3000/?expr=sin(30)"        # → 0.5
-curl "http://127.0.0.1:3000/?expr=multiply(6,7)"  # → 42
+curl "http://127.0.0.1:3000/?calculate=add(2,3)"      # → 5
+curl "http://127.0.0.1:3000/?calculate=sin(30)"        # → 0.5
+curl "http://127.0.0.1:3000/?calculate=multiply(6,7)"  # → 42
 ```
 
 See **[Run with Spin](#run-with-spin-thecalculaterspin)** below for the full list of curl examples.
@@ -263,7 +263,7 @@ wasmtime run --invoke 'calculate("unknown(1)")' the-calculater/the-calculater.wa
 
 ## Run with Spin (`thecalculaterspin`)
 
-`thecalculaterspin` is a Spin v4 HTTP application that exposes `the-calculater` as an HTTP endpoint. Send a GET request with a `?expr=` query parameter; the result is returned as plain text.
+`thecalculaterspin` is a Spin v4 HTTP application that exposes `the-calculater` as an HTTP endpoint. Send a GET request with a `?calculate=` query parameter; the result is returned as plain text.
 
 ### Prerequisites
 
@@ -308,28 +308,28 @@ In another terminal:
 
 ```sh
 # Arithmetic
-curl "http://127.0.0.1:3000/?expr=add(2,3)"         # → 5
-curl "http://127.0.0.1:3000/?expr=subtract(10,4)"   # → 6
-curl "http://127.0.0.1:3000/?expr=multiply(6,7)"    # → 42
-curl "http://127.0.0.1:3000/?expr=divide(9,3)"      # → 3
+curl "http://127.0.0.1:3000/?calculate=add(2,3)"         # → 5
+curl "http://127.0.0.1:3000/?calculate=subtract(10,4)"   # → 6
+curl "http://127.0.0.1:3000/?calculate=multiply(6,7)"    # → 42
+curl "http://127.0.0.1:3000/?calculate=divide(9,3)"      # → 3
 
 # Trigonometric (degrees)
-curl "http://127.0.0.1:3000/?expr=sin(30)"          # → 0.5
-curl "http://127.0.0.1:3000/?expr=cos(60)"          # → 0.5
-curl "http://127.0.0.1:3000/?expr=tan(45)"          # → 1
-curl "http://127.0.0.1:3000/?expr=arctan(1)"        # → 45
+curl "http://127.0.0.1:3000/?calculate=sin(30)"          # → 0.5
+curl "http://127.0.0.1:3000/?calculate=cos(60)"          # → 0.5
+curl "http://127.0.0.1:3000/?calculate=tan(45)"          # → 1
+curl "http://127.0.0.1:3000/?calculate=arctan(1)"        # → 45
 
 # Modulo / integer division
-curl "http://127.0.0.1:3000/?expr=mod(10,3)"        # → 1
-curl "http://127.0.0.1:3000/?expr=div(10,3)"        # → 3
+curl "http://127.0.0.1:3000/?calculate=mod(10,3)"        # → 1
+curl "http://127.0.0.1:3000/?calculate=div(10,3)"        # → 3
 
 # Logarithmic
-curl "http://127.0.0.1:3000/?expr=e()"              # → 2.718281828...
-curl "http://127.0.0.1:3000/?expr=ln(2.718281828)"  # → ~1
+curl "http://127.0.0.1:3000/?calculate=e()"              # → 2.718281828...
+curl "http://127.0.0.1:3000/?calculate=ln(2.718281828)"  # → ~1
 
 # Statistics
-curl "http://127.0.0.1:3000/?expr=sum(1,2,3,4,5)"  # → 15
-curl "http://127.0.0.1:3000/?expr=avg(1,2,3,4,5)"  # → 3
+curl "http://127.0.0.1:3000/?calculate=sum(1,2,3,4,5)"  # → 15
+curl "http://127.0.0.1:3000/?calculate=avg(1,2,3,4,5)"  # → 3
 ```
 
 ## Deploy on k3d / SpinKube (local Kubernetes)
@@ -380,9 +380,9 @@ The script performs these steps in order:
 ### Test
 
 ```sh
-curl "http://localhost:3000/?expr=add(2,3)"       # → 5
-curl "http://localhost:3000/?expr=multiply(6,7)"  # → 42
-curl "http://localhost:3000/?expr=sin(30)"         # → 0.5
+curl "http://localhost:3000/?calculate=add(2,3)"       # → 5
+curl "http://localhost:3000/?calculate=multiply(6,7)"  # → 42
+curl "http://localhost:3000/?calculate=sin(30)"         # → 0.5
 ```
 
 ### Check autoscaling

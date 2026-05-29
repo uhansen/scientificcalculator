@@ -73,7 +73,7 @@ async Task Worker(int id, CancellationToken ct)
         var reqSw = Stopwatch.StartNew();
         try
         {
-            var resp = await http.GetAsync($"{url}/?expr={Uri.EscapeDataString(expr)}", ct)
+            var resp = await http.GetAsync($"{url}/?calculate={Uri.EscapeDataString(expr)}", ct)
                                  .ConfigureAwait(false);
             reqSw.Stop();
             if (resp.IsSuccessStatusCode)
