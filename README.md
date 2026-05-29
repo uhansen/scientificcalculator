@@ -64,6 +64,9 @@ Exports a `statistics` interface with:
 ### `thecalculaterspin` (Rust, Spin v4 HTTP app)
 An HTTP application built with [Spin](https://spinframework.dev) that wraps `the-calculater` and exposes it over HTTP. Send a GET request with an `?calculate=` query parameter; the result is returned as plain text.
 
+### `thecalculatercli` (Rust, WASI CLI)
+An interactive command-line REPL that imports `the-calculater` via WIT and is composed with it using `wac`. Run with `wasmtime run` for an interactive calculator prompt.
+
 ## Prerequisites
 
 Install the tools required for the languages you want to build. All five are needed to compose `the-calculater`.
@@ -261,6 +264,55 @@ wasmtime run --invoke 'calculate("unknown(1)")' the-calculater/the-calculater.wa
 
 
 
+## Run interactively with `thecalculatercli`
+
+`thecalculatercli` is a WASI CLI Rust component that provides an interactive calculator prompt. It imports `the-calculater` and is composed with it using `wac`.
+
+### Prerequisites
+
+- Rust with `wasm32-wasip2` target: `rustup target add wasm32-wasip2`
+- `wac-cli`: `cargo install wac-cli`
+- `wasmtime` ≥ 18
+
+### Build
+
+```sh
+cd thecalculatercli
+cargo build --target wasm32-wasip2 --release
+wac plug \
+  --plug ../the-calculater/the-calculater.wasm \
+  target/wasm32-wasip2/release/thecalculatercli.wasm \
+  -o thecalculatercli-composed.wasm
+```
+
+### Run
+
+```sh
+wasmtime run thecalculatercli/thecalculatercli-composed.wasm
+```
+
+Example session:
+
+```
+Scientific Calculator — type 'q' to quit
+Supported: add  subtract  multiply  divide  sin  cos  tan  arctan
+           mod  div  e  ln  sum  avg
+
+calculate: add(2,2)
+4
+calculate: multiply(6,7)
+42
+calculate: sin(30)
+0.49999999999999994
+calculate: sum(1,2,3,4,5)
+15
+calculate: q
+```
+
+Type any expression supported by `the-calculater`. Enter `q` or `quit` to exit.
+
+---
+
 ## Run with Spin (`thecalculaterspin`)
 
 `thecalculaterspin` is a Spin v4 HTTP application that exposes `the-calculater` as an HTTP endpoint. Send a GET request with a `?calculate=` query parameter; the result is returned as plain text.
@@ -434,5 +486,6 @@ bash thecalculaterdepl/teardown.sh
 | `statistics-calculator/statistics-calculator.wasm` | 18 MB | Python — embeds CPython runtime |
 | `the-calculater/the-calculater.wasm` | 32 MB | Composed: all 5 sub-components bundled |
 | `thecalculaterspin/thecalculaterspin-composed.wasm` | 32 MB | Composed Spin app (Spin shell + the-calculater) |
+| `thecalculatercli/thecalculatercli-composed.wasm` | 32 MB | Composed CLI REPL (CLI shell + the-calculater) |
 
 > The size difference between languages is mainly due to embedded runtimes: Rust compiles directly to WASM with no runtime, while TypeScript (SpiderMonkey/StarlingMonkey) and Python (CPython) must bundle their interpreters inside the component.
