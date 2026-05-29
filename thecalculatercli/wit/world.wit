@@ -1,0 +1,5 @@
+package buildbyhansen:thecalculatercli@0.1.0;
+
+world calculator-cli {
+    import buildbyhansen:the-calculater/calculator@0.1.0;
+}
