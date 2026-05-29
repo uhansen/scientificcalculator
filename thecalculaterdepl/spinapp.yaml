@@ -3,10 +3,11 @@ kind: SpinApp
 metadata:
   name: thecalculaterspin
 spec:
-  image: "ttl.sh/thecalculaterspin:24h"
+  image: "ghcr.io/uhansen/thecalculaterspin:latest"
   replicas: 1
   executor: containerd-shim-spin
-  imagePullPolicy: Always
+  imagePullSecrets:
+    - name: ghcr-pull-secret
 ---
 # ExternalName service that routes to the KEDA HTTP interceptor proxy.
 # The Ingress sends traffic here so the interceptor can apply scale-to-zero.

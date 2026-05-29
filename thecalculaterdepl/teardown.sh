@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# teardown.sh – Removes the uha-cluster k3d cluster
+# teardown.sh – Removes the uha-cluster k3d cluster and associated secrets
 set -euo pipefail
 
 CLUSTER_NAME="uha-cluster"

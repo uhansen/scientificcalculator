@@ -366,7 +366,7 @@ bash thecalculaterdepl/deploy.sh
 
 The script performs these steps in order:
 
-1. **Push image** — `spin registry push ttl.sh/thecalculaterspin:24h` (free ephemeral registry, no auth)
+1. **Push image** — authenticates to `ghcr.io` via GitHub CLI token, runs `spin registry push ghcr.io/uhansen/thecalculaterspin:latest`, and creates an `imagePullSecret` in the cluster so nodes can pull the private package
 2. **Create cluster** — k3d cluster using `ghcr.io/spinframework/containerd-shim-spin/k3d:v0.24.0` (Spin shim pre-installed, no extra operator needed)
 3. **cert-manager** v1.16.3 — required by spin-operator webhooks
 4. **spin-operator** v0.6.1 — SpinApp CRD controller
@@ -417,7 +417,8 @@ bash thecalculaterdepl/teardown.sh
 
 ### Notes
 
-- **ttl.sh images expire after 24 h.** Re-run `deploy.sh` (or just `spin registry push ttl.sh/thecalculaterspin:24h` + `kubectl rollout restart deployment/thecalculaterspin`) when the image expires.
+- **ghcr.io image:** `ghcr.io/uhansen/thecalculaterspin:latest` — stored permanently in GitHub Container Registry (no expiry). The package is private; `deploy.sh` automatically creates an `imagePullSecret` (`ghcr-pull-secret`) in the cluster using the GitHub token. Requires a GitHub token with `write:packages` scope to push (set `GITHUB_TOKEN` env var, or ensure `gh auth token` has the scope — run `gh auth refresh -s write:packages` if needed).
+- **Re-deploying:** Re-run `deploy.sh` to push a new build and refresh the imagePullSecret, then `kubectl rollout restart deployment/thecalculaterspin`.
 - **min=1 (not 0):** The spin-operator reconciles `replicas: 1` from the SpinApp spec. Setting `min: 1` in the `HTTPScaledObject` keeps both controllers in agreement. True scale-to-zero would require removing the `replicas` field from the SpinApp and is not yet supported cleanly by spin-operator v0.6.1.
 - The cluster uses Spin shim **v0.24.0** (Spin 3.6.3 / wasmtime 42). The app was built with spin-sdk 5.2.0 (Spin 3.6.1 series) — compatible.
 
