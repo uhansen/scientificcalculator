@@ -8,7 +8,7 @@ wit_bindgen::generate!({
     generate_all,
 });
 
-/// HTTP handler: GET /?expr=<expression>
+/// HTTP handler: GET /?calculate=<expression>
 /// Delegates to the-calculater composed component and returns the result.
 #[http_component]
 fn handle(req: Request) -> Result<impl IntoResponse> {
@@ -22,7 +22,7 @@ fn handle(req: Request) -> Result<impl IntoResponse> {
         return Ok(Response::new(
             200,
             "Missing expression.\n\
-             Usage: GET /?expr=<expression>\n\
+             Usage: GET /?calculate=<expression>\n\
              Examples:\n\
              - add(2,3)    subtract(10,4)    multiply(3,7)    divide(10,2)\n\
              - sin(30)     cos(45)           tan(60)          arctan(1)\n\
@@ -40,7 +40,7 @@ fn get_expr(req: &Request) -> String {
     let uri = req.uri();
     let query = uri.split('?').nth(1).unwrap_or("");
     for pair in query.split('&') {
-        if let Some(value) = pair.strip_prefix("expr=") {
+        if let Some(value) = pair.strip_prefix("calculate=") {
             return urlencoded_decode(value);
         }
     }

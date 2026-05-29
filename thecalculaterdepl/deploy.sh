@@ -142,18 +142,18 @@ ok "HTTPScaledObject applied – scale-to-zero is active"
 info "Verification"
 echo "  Waiting for interceptor to stabilise…"
 sleep 5
-RESULT=$(curl -sf "http://localhost:3000/?expr=add(2,3)" || echo "")
+RESULT=$(curl -sf "http://localhost:3000/?calculate=add(2,3)" || echo "")
 if [ "${RESULT}" = "5" ]; then
   ok "HTTP API responds correctly: add(2,3) = ${RESULT}"
 else
   echo "  ⚠ Response: '${RESULT}' (expected '5'). Try manually:"
-  echo "    curl 'http://localhost:3000/?expr=add(2,3)'"
+  echo "    curl 'http://localhost:3000/?calculate=add(2,3)'"
 fi
 
 echo ""
 echo "═════════════════════════════════════════════════════════════"
 echo " thecalculaterspin is running on SpinKube + KEDA HTTP!"
-echo " curl \"http://localhost:3000/?expr=add(2,3)\""
+echo " curl \"http://localhost:3000/?calculate=add(2,3)\""
 echo " Scale-down: idle for ${SCALEDOWN_PERIOD}s → 1 replica (min)"
 echo " kubectl get httpscaledobject thecalculaterspin"
 echo "═════════════════════════════════════════════════════════════"
