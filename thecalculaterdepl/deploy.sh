@@ -7,7 +7,8 @@ set -euo pipefail
 # Configuration
 # ---------------------------------------------------------------------------
 CLUSTER_NAME="uha-cluster"
-IMAGE="ttl.sh/thecalculaterspin:24h"
+GHCR_USER="uhansen"
+IMAGE="ghcr.io/${GHCR_USER}/thecalculaterspin:latest"
 
 CERT_MANAGER_VERSION="v1.16.3"
 SPIN_OPERATOR_VERSION="v0.6.1"
@@ -30,14 +31,39 @@ wait_rollout() {
 }
 
 # ---------------------------------------------------------------------------
-# Step 1 – Push WASM image to ttl.sh (no auth, no registry setup needed)
+# Step 1 – Authenticate to ghcr.io, push WASM image, create imagePullSecret
 # ---------------------------------------------------------------------------
-info "Step 1: Pushing WASM image to ttl.sh (${IMAGE})"
+info "Step 1: Pushing WASM image to ghcr.io (${IMAGE})"
+
+# Use GITHUB_TOKEN env var if set, otherwise fall back to gh CLI token.
+# The token must have the 'write:packages' scope.
+if [[ -z "${GITHUB_TOKEN:-}" ]]; then
+  if ! gh auth status --hostname github.com &>/dev/null; then
+    echo "  ✗ Not logged in to GitHub. Run: gh auth login"
+    exit 1
+  fi
+  GITHUB_TOKEN="$(gh auth token)"
+fi
+
+echo "${GITHUB_TOKEN}" | spin registry login \
+  --username "${GHCR_USER}" \
+  --password-stdin \
+  ghcr.io
+
 (
   cd "${SPIN_APP_DIR}"
   spin registry push "${IMAGE}"
 )
 ok "Image pushed: ${IMAGE}"
+
+# Create (or refresh) imagePullSecret so k3d nodes can pull from ghcr.io.
+kubectl create secret docker-registry ghcr-pull-secret \
+  --docker-server=ghcr.io \
+  --docker-username="${GHCR_USER}" \
+  --docker-password="${GITHUB_TOKEN}" \
+  --namespace=default \
+  --dry-run=client -o yaml | kubectl apply -f -
+ok "imagePullSecret ghcr-pull-secret created/updated"
 
 # ---------------------------------------------------------------------------
 # Step 2 – k3d cluster (shim v0.24.0 pre-installed in the node image)
