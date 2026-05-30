@@ -208,8 +208,7 @@ All WASM components built and OCI image pushed to ghcr.io.
 
 ---
 *This PR was created automatically by the CI/CD pipeline.*
-*Waiting for GitHub Copilot review before auto-merging.*" \
-              --reviewer "github-copilot[bot]"
+*Waiting for GitHub Copilot review before auto-merging.*"
 
             # Re-fetch PR number after creation
             EXISTING=$(gh pr list \
@@ -232,6 +231,14 @@ All WASM components built and OCI image pushed to ghcr.io.
 *This PR was updated automatically by the CI/CD pipeline.*
 *Waiting for GitHub Copilot review before auto-merging.*"
           fi
+
+          # Request Copilot code review (requires Copilot code review enabled in repo settings)
+          # CODEOWNERS (* @github-copilot) auto-requests on PR creation; this is a belt-and-suspenders fallback.
+          gh api \
+            repos/${{ github.repository }}/pulls/${EXISTING}/requested_reviewers \
+            --method POST \
+            -f 'reviewers[]=github-copilot' \
+            2>/dev/null || echo "Note: Copilot review will be requested via CODEOWNERS"
 
           # Enable auto-merge (merges once review + checks pass)
           gh pr merge "${EXISTING}" --auto --merge
