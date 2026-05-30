@@ -1,5 +1,0 @@
-package buildbyhansen:the-calculator@0.1.0;
-
-interface calculator {
-    calculate: func(expr: string) -> string;
-}

@@ -1,0 +1,15 @@
+/home/uhansen/source/projects/scientificcalculater/calculaterstresstest/bin/Release/net10.0/calculaterstresstest
+/home/uhansen/source/projects/scientificcalculater/calculaterstresstest/bin/Release/net10.0/calculaterstresstest.deps.json
+/home/uhansen/source/projects/scientificcalculater/calculaterstresstest/bin/Release/net10.0/calculaterstresstest.runtimeconfig.json
+/home/uhansen/source/projects/scientificcalculater/calculaterstresstest/bin/Release/net10.0/calculaterstresstest.dll
+/home/uhansen/source/projects/scientificcalculater/calculaterstresstest/bin/Release/net10.0/calculaterstresstest.pdb
+/home/uhansen/source/projects/scientificcalculater/calculaterstresstest/obj/Release/net10.0/calculaterstresstest.GeneratedMSBuildEditorConfig.editorconfig
+/home/uhansen/source/projects/scientificcalculater/calculaterstresstest/obj/Release/net10.0/calculaterstresstest.AssemblyInfoInputs.cache
+/home/uhansen/source/projects/scientificcalculater/calculaterstresstest/obj/Release/net10.0/calculaterstresstest.AssemblyInfo.cs
+/home/uhansen/source/projects/scientificcalculater/calculaterstresstest/obj/Release/net10.0/calculaterstresstest.csproj.CoreCompileInputs.cache
+/home/uhansen/source/projects/scientificcalculater/calculaterstresstest/obj/Release/net10.0/calculaterstresstest.sourcelink.json
+/home/uhansen/source/projects/scientificcalculater/calculaterstresstest/obj/Release/net10.0/calculaterstresstest.dll
+/home/uhansen/source/projects/scientificcalculater/calculaterstresstest/obj/Release/net10.0/refint/calculaterstresstest.dll
+/home/uhansen/source/projects/scientificcalculater/calculaterstresstest/obj/Release/net10.0/calculaterstresstest.pdb
+/home/uhansen/source/projects/scientificcalculater/calculaterstresstest/obj/Release/net10.0/calculaterstresstest.genruntimeconfig.cache
+/home/uhansen/source/projects/scientificcalculater/calculaterstresstest/obj/Release/net10.0/ref/calculaterstresstest.dll

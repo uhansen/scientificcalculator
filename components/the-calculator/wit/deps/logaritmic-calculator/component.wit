@@ -1,0 +1,10 @@
+package buildbyhansen:logaritmic-calculator@0.1.0;
+
+interface logaritmic {
+    e: func() -> f64;
+    ln: func(x: f64) -> f64;
+}
+
+world logaritmic-calculator {
+    export logaritmic;
+}

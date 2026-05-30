@@ -1,7 +1,7 @@
 [workspace]
 members = [
-    "arithmetic-calculator",
-    "trigonometric-calculator",
-    "the-calculator",
+    "components/arithmetic-calculator",
+    "components/trigonometric-calculator",
+    "components/the-calculator",
 ]
 resolver = "2"

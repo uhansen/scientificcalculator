@@ -1,5 +1,0 @@
-package buildbyhansen:thecalculatorspin@0.1.0;
-
-world calculator-import {
-    import buildbyhansen:the-calculator/calculator@0.1.0;
-}

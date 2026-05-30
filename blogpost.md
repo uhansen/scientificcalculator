@@ -154,7 +154,7 @@ The Component Model is still evolving. The specification is largely stable, the 
 What exists today is already enough to build real, multi-language systems. The scientific calculator in this repository is a small but concrete example: five components in Rust, TypeScript, C#, and Python, each independently buildable and verifiable, composed into a single binary with a single entry point, runnable with a one-liner:
 
 ```sh
-wasmtime run --invoke 'calculate("add(2,2)")' the-calculator/the-calculator.wasm
+wasmtime run --invoke 'calculate("add(2,2)")' components/the-calculator/the-calculator.wasm
 # → "4"
 ```
 
@@ -236,13 +236,13 @@ fn get_expr(req: &Request) -> String {
 ### Building the Spin app
 
 ```sh
-cd thecalculatorspin
+cd applications/thecalculatorspin
 
 # Step 1: compile the Spin handler to WASM
 cargo build --target wasm32-wasip2 --release
 
 # Step 2: compose — plug the-calculator into the Spin component
-wac plug --plug ../the-calculator/the-calculator.wasm \
+wac plug --plug ../../components/the-calculator/the-calculator.wasm \
   target/wasm32-wasip2/release/thecalculatorspin.wasm \
   -o thecalculatorspin-composed.wasm
 ```
@@ -346,16 +346,16 @@ The WIT world mirrors the Spin app's: it imports `buildbyhansen:the-calculator/c
 ### Build and run
 
 ```sh
-cd thecalculatorcli
+cd applications/thecalculatorcli
 cargo build --target wasm32-wasip2 --release
 wac plug \
-  --plug ../the-calculator/the-calculator.wasm \
+  --plug ../../components/the-calculator/the-calculator.wasm \
   target/wasm32-wasip2/release/thecalculatorcli.wasm \
   -o thecalculatorcli-composed.wasm
 ```
 
 ```sh
-wasmtime run thecalculatorcli/thecalculatorcli-composed.wasm
+wasmtime run applications/thecalculatorcli/thecalculatorcli-composed.wasm
 ```
 
 Example session:
@@ -417,10 +417,10 @@ The Spin app is packaged as an OCI image and pushed to GitHub Container Registry
 spin registry push ghcr.io/uhansen/thecalculatorspin:latest
 ```
 
-The deploy script (`thecalculatordepl/deploy.sh`) performs all ten steps in order — cluster creation, cert-manager, spin-operator, RuntimeClass, KEDA, KEDA HTTP Add-on, SpinApp, HTTPScaledObject, and a Traefik patch for ExternalName services — with a single command:
+The deploy script (`deploy/thecalculatordepl/deploy.sh`) performs all ten steps in order — cluster creation, cert-manager, spin-operator, RuntimeClass, KEDA, KEDA HTTP Add-on, SpinApp, HTTPScaledObject, and a Traefik patch for ExternalName services — with a single command:
 
 ```sh
-bash thecalculatordepl/deploy.sh
+bash deploy/thecalculatordepl/deploy.sh
 ```
 
 After the cluster is up:
