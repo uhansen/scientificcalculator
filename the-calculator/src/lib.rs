@@ -7,7 +7,7 @@ wit_bindgen::generate!({
 
 use buildbyhansen::arithmetic_calculator::arithmetic as arith;
 use buildbyhansen::logaritmic_calculator::logaritmic as log;
-use buildbyhansen::moddiv::moddiv as md;
+use buildbyhansen::moddiv_calculator::moddiv as md;
 use buildbyhansen::statistics_calculator::statistics as stats;
 use buildbyhansen::trigonometric_calculator::trigonometric as trig;
 

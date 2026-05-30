@@ -6,7 +6,7 @@ WebAssembly components built in Rust, TypeScript, C#, and Python, following the 
 |---|---|---|
 | `arithmetic-calculator` | Rust | `add` `subtract` `multiply` `divide` |
 | `trigonometric-calculator` | Rust | `sin` `cos` `tan` `arctan` |
-| `moddiv` | TypeScript | `mod` `div` |
+| `moddiv-calculator` | TypeScript | `mod` `div` |
 | `logaritmic-calculator` | C# / .NET 10 | `e` `ln` |
 | `statistics-calculator` | Python | `sum` `avg` |
 | `the-calculator` | Composed (all 5) | `calculate(string) → string` |
@@ -28,7 +28,7 @@ Accepts function-call style expressions and routes them to the correct sub-compo
 |---|---|
 | `add(2,3)` `subtract(5,1)` `multiply(2,4)` `divide(9,3)` | arithmetic |
 | `sin(45)` `cos(60)` `tan(30)` `arctan(1)` | trigonometric |
-| `mod(7,3)` `div(7,3)` | moddiv |
+| `mod(7,3)` `div(7,3)` | moddiv-calculator |
 | `e()` `ln(2.718)` | logaritmic |
 | `sum(1,2,3)` `avg(1,2,3,4)` | statistics |
 
@@ -46,8 +46,8 @@ Exports a `trigonometric` interface with (angles in degrees):
 - `tan(degrees: f64) -> f64`
 - `arctan(value: f64) -> f64` — returns degrees
 
-### `moddiv` (TypeScript → WASM via jco)
-Exports a `moddiv` interface with:
+### `moddiv-calculator` (TypeScript → WASM via jco)
+Exports a `moddiv-calculator` interface with:
 - `mod(x: f64, y: f64) -> f64` — remainder of x divided by y
 - `div(x: f64, y: f64) -> f64` — quotient of x divided by y
 
@@ -86,7 +86,7 @@ cargo install wac-cli
 ### `arithmetic-calculator` and `trigonometric-calculator` (Rust)
 No additional tools — the Rust toolchain above is sufficient.
 
-### `moddiv` (TypeScript)
+### `moddiv-calculator` (TypeScript)
 Requires [Node.js](https://nodejs.org/) ≥ 18. npm dependencies (`jco`, `typescript`) are installed locally via `npm install`.
 
 ### `logaritmic-calculator` (C# / .NET)
@@ -135,13 +135,13 @@ cargo build -p the-calculator --target wasm32-wasip2 --release
 ### Step 2 — TypeScript: moddiv
 
 ```sh
-cd moddiv
+cd moddiv-calculator
 npm install          # installs jco and typescript locally
 npm run build        # tsc (TS → JS) then jco componentize (JS → WASM)
 cd ..
 ```
 
-Output: `moddiv/moddiv.wasm`
+Output: `moddiv-calculator/moddiv-calculator.wasm`
 
 ### Step 3 — C#: logaritmic-calculator
 
@@ -170,7 +170,7 @@ Confirm each sub-component exports the expected interface:
 ```sh
 wasm-tools component wit target/wasm32-wasip2/release/arithmetic_calculator.wasm
 wasm-tools component wit target/wasm32-wasip2/release/trigonometric_calculator.wasm
-wasm-tools component wit moddiv/moddiv.wasm
+wasm-tools component wit moddiv-calculator/moddiv-calculator.wasm
 wasm-tools component wit logaritmic-calculator/bin/Release/net10.0/wasi-wasm/native/logaritmic-calculator.wasm
 wasm-tools component wit statistics-calculator/statistics-calculator.wasm
 ```
@@ -183,7 +183,7 @@ wasm-tools component wit statistics-calculator/statistics-calculator.wasm
 wac plug \
   --plug target/wasm32-wasip2/release/arithmetic_calculator.wasm \
   --plug target/wasm32-wasip2/release/trigonometric_calculator.wasm \
-  --plug moddiv/moddiv.wasm \
+  --plug moddiv-calculator/moddiv-calculator.wasm \
   --plug logaritmic-calculator/bin/Release/net10.0/wasi-wasm/native/logaritmic-calculator.wasm \
   --plug statistics-calculator/statistics-calculator.wasm \
   target/wasm32-wasip2/release/the_calculator.wasm \
@@ -482,7 +482,7 @@ bash thecalculatordepl/teardown.sh
 | `target/wasm32-wasip2/release/arithmetic_calculator.wasm` | 66 KB | Rust — no runtime overhead |
 | `target/wasm32-wasip2/release/thecalculatorspin.wasm` | 262 KB | Spin HTTP shell (before composition) |
 | `logaritmic-calculator/bin/Release/net10.0/wasi-wasm/native/logaritmic-calculator.wasm` | 2.5 MB | C# / .NET 10 |
-| `moddiv/moddiv.wasm` | 12 MB | TypeScript — embeds StarlingMonkey JS engine |
+| `moddiv-calculator/moddiv-calculator.wasm` | 12 MB | TypeScript — embeds StarlingMonkey JS engine |
 | `statistics-calculator/statistics-calculator.wasm` | 18 MB | Python — embeds CPython runtime |
 | `the-calculator/the-calculator.wasm` | 32 MB | Composed: all 5 sub-components bundled |
 | `thecalculatorspin/thecalculatorspin-composed.wasm` | 32 MB | Composed Spin app (Spin shell + the-calculator) |

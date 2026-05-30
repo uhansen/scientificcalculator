@@ -1,7 +1,9 @@
 /target
-moddiv/node_modules
-moddiv/moddiv.js
-moddiv/moddiv.wasm
+moddiv-calculator/node_modules
+moddiv-calculator/moddiv-calculator.js
+moddiv-calculator/moddiv-calculator.wasm
+moddiv-calculator/moddiv.js
+moddiv-calculator/moddiv.wasm
 logaritmic-calculator/bin
 logaritmic-calculator/obj
 the-calculator/the-calculator.wasm

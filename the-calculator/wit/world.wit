@@ -7,7 +7,7 @@ interface calculator {
 world the-calculator {
     import buildbyhansen:arithmetic-calculator/arithmetic@0.1.0;
     import buildbyhansen:trigonometric-calculator/trigonometric@0.1.0;
-    import buildbyhansen:moddiv/moddiv@0.1.0;
+    import buildbyhansen:moddiv-calculator/moddiv@0.1.0;
     import buildbyhansen:logaritmic-calculator/logaritmic@0.1.0;
     import buildbyhansen:statistics-calculator/statistics@0.1.0;
 

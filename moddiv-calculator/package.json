@@ -1,0 +1,16 @@
+{
+  "name": "moddiv-calculator",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "WebAssembly component implementing mod (remainder) and div (quotient)",
+  "scripts": {
+    "types": "jco types wit/world.wit -o types",
+    "build:ts": "tsc",
+    "componentize": "jco componentize --wit wit/world.wit --world-name moddiv-world --out moddiv-calculator.wasm --disable=all moddiv-calculator.js",
+    "build": "npm run build:ts && npm run componentize"
+  },
+  "devDependencies": {
+    "@bytecodealliance/jco": "^1.19.0",
+    "typescript": "^5.8.3"
+  }
+}
