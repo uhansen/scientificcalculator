@@ -61,7 +61,7 @@ Exports a `statistics` interface with:
 - `sum(numbers: list<f64>) -> f64` — sum of a list of numbers
 - `avg(numbers: list<f64>) -> f64` — arithmetic mean (returns 0.0 for empty list)
 
-### `thecalculatorspin` (Rust, Spin v4 HTTP app)
+### `thecalculatorspin` (Rust, Spin 3.6+ HTTP app)
 An HTTP application built with [Spin](https://spinframework.dev) that wraps `the-calculator` and exposes it over HTTP. Send a GET request with an `?calculate=` query parameter; the result is returned as plain text.
 
 ### `thecalculatorcli` (Rust, WASI CLI)
@@ -99,7 +99,7 @@ pip install componentize-py
 ```
 
 ### `thecalculatorspin` (Spin HTTP app)
-Requires [Spin v4](https://spinframework.dev/install) in addition to the Rust toolchain and `wac-cli` listed above:
+Requires [Spin 3.6+](https://spinframework.dev/install) in addition to the Rust toolchain and `wac-cli` listed above:
 ```sh
 # Install Spin
 curl -fsSL https://spinframework.dev/downloads/install.sh | bash

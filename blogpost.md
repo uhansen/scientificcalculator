@@ -97,22 +97,22 @@ Consider a system with five sub-components — each written in a different langu
 ```
 arithmetic-calculator (Rust)       ─┐
 trigonometric-calculator (Rust)    ─┤
-moddiv (TypeScript)                ─┼──► the-calculater (Rust shell)
-logaritmic-calculater (C#)         ─┤
+moddiv (TypeScript)                ─┼──► the-calculator (Rust shell)
+logaritmic-calculator (C#)         ─┤
 statistics-calculator (Python)     ─┘
 ```
 
 The shell declares its imports in WIT:
 
 ```wit
-world the-calculater {
+world the-calculator {
     import buildbyhansen:arithmetic-calculator/arithmetic@0.1.0;
     import buildbyhansen:trigonometric-calculator/trigonometric@0.1.0;
     import buildbyhansen:moddiv/moddiv@0.1.0;
-    import buildbyhansen:logaritmic-calculater/logaritmic@0.1.0;
+    import buildbyhansen:logaritmic-calculator/logaritmic@0.1.0;
     import buildbyhansen:statistics-calculator/statistics@0.1.0;
 
-    export buildbyhansen:the-calculater/calculator@0.1.0;
+    export buildbyhansen:the-calculator/calculator@0.1.0;
 }
 ```
 
@@ -123,10 +123,10 @@ wac plug \
   --plug arithmetic_calculator.wasm \
   --plug trigonometric_calculator.wasm \
   --plug moddiv.wasm \
-  --plug logaritmic-calculater.wasm \
+  --plug logaritmic-calculator.wasm \
   --plug statistics-calculator.wasm \
-  the_calculater.wasm \
-  -o the-calculater.wasm
+  the_calculator.wasm \
+  -o the-calculator.wasm
 ```
 
 The composed output has no sub-component imports left — only WASI host APIs remain external. Five separate binaries, written in four different languages, become one.
@@ -154,7 +154,7 @@ The Component Model is still evolving. The specification is largely stable, the 
 What exists today is already enough to build real, multi-language systems. The scientific calculator in this repository is a small but concrete example: five components in Rust, TypeScript, C#, and Python, each independently buildable and verifiable, composed into a single binary with a single entry point, runnable with a one-liner:
 
 ```sh
-wasmtime run --invoke 'calculate("add(2,2)")' the-calculater/the-calculater.wasm
+wasmtime run --invoke 'calculate("add(2,2)")' the-calculator/the-calculator.wasm
 # → "4"
 ```
 
@@ -175,29 +175,29 @@ HTTP request
      │
      ▼
 ┌─────────────────────────────┐
-│  thecalculaterspin          │  ← Spin HTTP app (Rust, wasm32-wasip2)
+│  thecalculatorspin          │  ← Spin 3.6+ HTTP app (Rust, wasm32-wasip2)
 │  exports wasi:http/handler  │
-│  imports buildbyhansen:the-calculater│
+│  imports buildbyhansen:the-calculator│
 └────────────┬────────────────┘
              │  (composed in by wac plug)
              ▼
 ┌─────────────────────────────┐
-│  the-calculater.wasm        │  ← composed component (5 sub-components)
+│  the-calculator.wasm        │  ← composed component (5 sub-components)
 │  arithmetic · trig · moddiv │
 │  logarithmic · statistics   │
 └─────────────────────────────┘
 ```
 
-The Spin app imports the `calculate(string) → string` interface from `the-calculater`. At build time, `wac plug` fills that import by embedding the composed calculator binary directly into the Spin component. The resulting binary is fully self-contained: Spin only needs to provide the WASI host APIs.
+The Spin app imports the `calculate(string) → string` interface from `the-calculator`. At build time, `wac plug` fills that import by embedding the composed calculator binary directly into the Spin component. The resulting binary is fully self-contained: Spin only needs to provide the WASI host APIs.
 
 ### Implementing the handler
 
-The handler is a Rust async function decorated with `#[http_service]` from `spin-sdk 6.0.0`:
+The handler is a synchronous Rust function decorated with `#[http_component]` from `spin-sdk 5.2.0`:
 
 ```rust
-use spin_sdk::http::body::IncomingBodyExt;
-use spin_sdk::http::{IntoResponse, Request, StatusCode};
-use spin_sdk::{http_service, wit_bindgen};
+use anyhow::Result;
+use spin_sdk::http::{IntoResponse, Method, Request, Response};
+use spin_sdk::http_component;
 
 wit_bindgen::generate!({
     path: "wit",
@@ -205,25 +205,28 @@ wit_bindgen::generate!({
     generate_all,
 });
 
-#[http_service]
-async fn handle(req: Request) -> impl IntoResponse {
-    let expr = get_expr(req).await;
-    let result = buildbyhansen::the_calculater::calculator::calculate(&expr);
-    (StatusCode::OK, result)
+#[http_component]
+fn handle(req: Request) -> Result<impl IntoResponse> {
+    if req.method() != &Method::Get {
+        return Ok(Response::new(405, "Only GET is supported\n"));
+    }
+    let expr = get_expr(&req);
+    let result = buildbyhansen::the_calculator::calculator::calculate(&expr);
+    Ok(Response::new(200, result))
 }
 ```
 
-`wit_bindgen::generate!` reads the local WIT file that declares the import of `buildbyhansen:the-calculater/calculator@0.1.0`, and generates the Rust bindings. The `calculate()` call looks like a normal function call — the Component Model handles the rest.
+`wit_bindgen::generate!` reads the local WIT file that declares the import of `buildbyhansen:the-calculator/calculator@0.1.0`, and generates the Rust bindings. The `calculate()` call looks like a normal function call — the Component Model handles the rest.
 
-Expressions are passed as a `?expr=` query parameter on GET requests:
+Expressions are passed as a `?calculate=` query parameter on GET requests:
 
 ```rust
 fn get_expr(req: &Request) -> String {
-    if let Some(query) = req.uri().query() {
-        for pair in query.split('&') {
-            if let Some(value) = pair.strip_prefix("expr=") {
-                return urlencoded_decode(value);
-            }
+    let uri = req.uri();
+    let query = uri.split('?').nth(1).unwrap_or("");
+    for pair in query.split('&') {
+        if let Some(value) = pair.strip_prefix("calculate=") {
+            return urlencoded_decode(value);
         }
     }
     String::new()
@@ -233,15 +236,15 @@ fn get_expr(req: &Request) -> String {
 ### Building the Spin app
 
 ```sh
-cd thecalculaterspin
+cd thecalculatorspin
 
 # Step 1: compile the Spin handler to WASM
 cargo build --target wasm32-wasip2 --release
 
-# Step 2: compose — plug the-calculater into the Spin component
-wac plug --plug ../the-calculater/the-calculater.wasm \
-  target/wasm32-wasip2/release/thecalculaterspin.wasm \
-  -o thecalculaterspin-composed.wasm
+# Step 2: compose — plug the-calculator into the Spin component
+wac plug --plug ../the-calculator/the-calculator.wasm \
+  target/wasm32-wasip2/release/thecalculatorspin.wasm \
+  -o thecalculatorspin-composed.wasm
 ```
 
 Or in one command via `spin.toml`'s build hook:
@@ -258,21 +261,21 @@ spin up --listen 127.0.0.1:3000
 
 ```sh
 # Arithmetic
-curl "http://127.0.0.1:3000/?expr=add(2,3)"         # → 5
-curl "http://127.0.0.1:3000/?expr=multiply(6,7)"    # → 42
-curl "http://127.0.0.1:3000/?expr=divide(9,3)"      # → 3
+curl "http://127.0.0.1:3000/?calculate=add(2,3)"         # → 5
+curl "http://127.0.0.1:3000/?calculate=multiply(6,7)"    # → 42
+curl "http://127.0.0.1:3000/?calculate=divide(9,3)"      # → 3
 
 # Trigonometric (degrees)
-curl "http://127.0.0.1:3000/?expr=sin(30)"          # → 0.5
-curl "http://127.0.0.1:3000/?expr=arctan(1)"        # → 45
+curl "http://127.0.0.1:3000/?calculate=sin(30)"          # → 0.5
+curl "http://127.0.0.1:3000/?calculate=arctan(1)"        # → 45
 
 # Logarithmic
-curl "http://127.0.0.1:3000/?expr=e()"              # → 2.718281828...
-curl "http://127.0.0.1:3000/?expr=ln(2.718281828)"  # → ~1
+curl "http://127.0.0.1:3000/?calculate=e()"              # → 2.718281828...
+curl "http://127.0.0.1:3000/?calculate=ln(2.718281828)"  # → ~1
 
 # Statistics
-curl "http://127.0.0.1:3000/?expr=sum(1,2,3,4,5)"  # → 15
-curl "http://127.0.0.1:3000/?expr=avg(1,2,3,4,5)"  # → 3
+curl "http://127.0.0.1:3000/?calculate=sum(1,2,3,4,5)"  # → 15
+curl "http://127.0.0.1:3000/?calculate=avg(1,2,3,4,5)"  # → 3
 ```
 
 ### What this demonstrates
@@ -281,8 +284,159 @@ A few things stand out about this workflow:
 
 **WASM composition scales to real services.** The same `wac plug` command used to compose five calculator sub-components is used again here — this time to embed a 32 MB composed binary inside a Spin HTTP handler. The mechanism is identical.
 
-**The interface contract is the API.** The Spin handler doesn't know that `the-calculater` is made of Rust, TypeScript, C#, and Python. It sees one WIT interface: `calculate(string) → string`. Language implementation details are invisible at composition time.
+**The interface contract is the API.** The Spin handler doesn't know that `the-calculator` is made of Rust, TypeScript, C#, and Python. It sees one WIT interface: `calculate(string) → string`. Language implementation details are invisible at composition time.
 
 **Cold start is fast.** Because WebAssembly modules are pre-compiled and sandboxed, Spin can instantiate the component per-request with very low overhead — no JVM startup, no Python interpreter initialization on the hot path.
 
-The full source for `thecalculaterspin` is in the [scientificcalculater repository](https://github.com/uhansen/scientificcalculater).
+The full source for `thecalculatorspin` is in the [scientificcalculator repository](https://github.com/uhansen/scientificcalculator).
+
+---
+
+## An Interactive CLI with `thecalculatorcli`
+
+The same composed binary that powers the HTTP service can be used from the command line — no HTTP server, no deployment, just `wasmtime run`. To make this ergonomic, `thecalculatorcli` is a WASI CLI Rust component that wraps `the-calculator` in an interactive REPL.
+
+### What is WASI CLI?
+
+[WASI CLI](https://github.com/WebAssembly/wasi-cli) is a WASI P2 proposal that standardises command-line program behaviour for WASM components: stdin/stdout/stderr streams, environment variables, process exit, and terminal detection. A component that exports `wasi:cli/run` is a proper WASI command — any compliant runtime (Wasmtime ≥ 18) can run it with `wasmtime run`.
+
+When you target `wasm32-wasip2` in Rust and write a `main()` function, the Rust runtime automatically exports `wasi:cli/run`, so the component is a first-class WASI command with no extra boilerplate.
+
+### The implementation
+
+`thecalculatorcli` is a small Rust binary that imports `the-calculator` via WIT and reads from stdin in a loop:
+
+```rust
+wit_bindgen::generate!({
+    path: "wit",
+    world: "calculator-cli",
+    generate_all,
+});
+
+use buildbyhansen::the_calculator::calculator::calculate;
+
+fn main() {
+    println!("Scientific Calculator — type 'q' to quit");
+    println!("Supported: add  subtract  multiply  divide  sin  cos  tan  arctan");
+    println!("           mod  div  e  ln  sum  avg");
+    println!();
+
+    loop {
+        print!("calculate: ");
+        use std::io::Write;
+        std::io::stdout().flush().unwrap();
+
+        let mut line = String::new();
+        match std::io::stdin().read_line(&mut line) {
+            Ok(0) | Err(_) => break,
+            Ok(_) => {}
+        }
+
+        let input = line.trim();
+        if input == "q" || input == "quit" { break; }
+        if input.is_empty() { continue; }
+
+        println!("{}", calculate(input));
+    }
+}
+```
+
+The WIT world mirrors the Spin app's: it imports `buildbyhansen:the-calculator/calculator@0.1.0`. At composition time, `wac plug` embeds the full 32 MB composed calculator binary inside the CLI shell — the same mechanism as `thecalculatorspin`.
+
+### Build and run
+
+```sh
+cd thecalculatorcli
+cargo build --target wasm32-wasip2 --release
+wac plug \
+  --plug ../the-calculator/the-calculator.wasm \
+  target/wasm32-wasip2/release/thecalculatorcli.wasm \
+  -o thecalculatorcli-composed.wasm
+```
+
+```sh
+wasmtime run thecalculatorcli/thecalculatorcli-composed.wasm
+```
+
+Example session:
+
+```
+Scientific Calculator — type 'q' to quit
+Supported: add  subtract  multiply  divide  sin  cos  tan  arctan
+           mod  div  e  ln  sum  avg
+
+calculate: add(2,2)
+4
+calculate: multiply(6,7)
+42
+calculate: sin(30)
+0.49999999999999994
+calculate: sum(1,2,3,4,5)
+15
+calculate: q
+```
+
+You can verify what the component actually exports:
+
+```sh
+wasm-tools component wit thecalculatorcli/thecalculatorcli-composed.wasm | grep -E "export|run"
+# → export wasi:cli/run@0.2.6
+```
+
+This confirms it is a proper WASI P2 command. The Rust `main()` function maps directly to `wasi:cli/run` — no extra configuration needed.
+
+### Why this matters
+
+The same WIT interface and composition tool (`wac plug`) used to build the HTTP service powers the CLI REPL. `the-calculator` is not a library — it is a self-contained binary component with a stable, versioned interface. Consuming it from a CLI or an HTTP handler requires nothing more than declaring the import in WIT and composing at build time. The Component Model's interface contract is the only shared dependency.
+
+---
+
+## Deploying on Kubernetes with SpinKube
+
+Running the calculator locally with `spin up` is convenient for development. For production-like deployments the app runs on [k3d](https://k3d.io) (a local Kubernetes cluster) with [SpinKube](https://www.spinkube.dev) as the WASM runtime operator and [KEDA](https://keda.sh) for HTTP-triggered autoscaling.
+
+### The stack
+
+```
+curl localhost:3000
+  → Traefik (k3d port 3000 → 80)
+    → KEDA HTTP interceptor proxy  ← buffers requests, triggers scale-up
+      → thecalculatorspin pod (SpinApp, containerd-shim-spin runtime)
+```
+
+- **k3d** runs a local Kubernetes cluster with a custom node image that has the [containerd-shim-spin](https://github.com/spinframework/containerd-shim-spin) pre-installed. No KWasm node provisioning is needed.
+- **spin-operator** watches `SpinApp` custom resources and creates Deployments that use the `wasmtime-spin-v2` RuntimeClass.
+- **KEDA HTTP Add-on** adds an `HTTPScaledObject` CRD. An interceptor proxy sits in front of the app, buffers requests, and triggers scale-up on demand. After 60 s of idle, the deployment scales back to 1 replica.
+- The container image is a Spin OCI artifact pushed to `ghcr.io` — no traditional Docker container, just the `.wasm` binary packed as an OCI image.
+
+### Image and deployment
+
+The Spin app is packaged as an OCI image and pushed to GitHub Container Registry:
+
+```sh
+spin registry push ghcr.io/uhansen/thecalculatorspin:latest
+```
+
+The deploy script (`thecalculatordepl/deploy.sh`) performs all ten steps in order — cluster creation, cert-manager, spin-operator, RuntimeClass, KEDA, KEDA HTTP Add-on, SpinApp, HTTPScaledObject, and a Traefik patch for ExternalName services — with a single command:
+
+```sh
+bash thecalculatordepl/deploy.sh
+```
+
+After the cluster is up:
+
+```sh
+curl "http://localhost:3000/?calculate=add(2,3)"       # → 5
+curl "http://localhost:3000/?calculate=multiply(6,7)"  # → 42
+curl "http://localhost:3000/?calculate=sin(30)"        # → 0.5
+```
+
+### What makes this interesting
+
+**WASM as the deployment unit.** There is no Dockerfile. The `spin registry push` command packages the `.wasm` component as an OCI artifact. SpinKube pulls that artifact and runs it directly inside containerd via the Spin shim — no Linux container filesystem, no libc, no user-space interpreter.
+
+**Cold start is negligible.** Wasmtime JIT-compiles the WASM binary to native code at module load time. Pod startup is dominated by Kubernetes scheduling, not runtime initialisation.
+
+**Scale-to-one on idle.** KEDA's HTTPScaledObject keeps a minimum of 1 replica so the spin-operator and Kubernetes stay in sync. True scale-to-zero is possible but requires additional coordination with the SpinApp spec's `replicas` field — a known limitation of spin-operator v0.6.1.
+
+The full deployment manifests are in `thecalculatordepl/` in the [scientificcalculator repository](https://github.com/uhansen/scientificcalculator).
