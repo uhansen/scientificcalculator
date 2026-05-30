@@ -2,6 +2,7 @@ import type * as ModdivInterface from "./types/interfaces/buildbyhansen-moddiv-c
 
 type ModdivExport = typeof ModdivInterface;
 
+//modulus operation and division operation calculator
 export const moddiv: ModdivExport = {
   mod(x: number, y: number): number {
     return x % y;
