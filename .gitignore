@@ -2,9 +2,9 @@
 moddiv/node_modules
 moddiv/moddiv.js
 moddiv/moddiv.wasm
-logaritmic-calculater/bin
-logaritmic-calculater/obj
-the-calculater/the-calculater.wasm
+logaritmic-calculator/bin
+logaritmic-calculator/obj
+the-calculator/the-calculator.wasm
 statistics-calculator/wit_world
 statistics-calculator/statistics-calculator.wasm
 statistics-calculator/__pycache__
@@ -14,8 +14,11 @@ statistics-calculator/componentize_py_types.py
 statistics-calculator/poll_loop.py
 
 # Spin app build artifacts
-thecalculaterspin/thecalculaterspin-composed.wasm
-thecalculaterspin/.spin/
+thecalculatorspin/thecalculatorspin-composed.wasm
+thecalculatorspin/.spin/
+
+# CLI build artifacts
+thecalculatorcli/thecalculatorcli-composed.wasm
 
 # Spin binary (too large for GitHub)
 spin
@@ -23,5 +26,5 @@ spin.sig
 crt.pem
 
 # .NET build artifacts
-calculaterstresstest/bin/
-calculaterstresstest/obj/
+calculatorstresstest/bin/
+calculatorstresstest/obj/

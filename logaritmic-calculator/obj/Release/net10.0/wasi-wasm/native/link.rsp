@@ -1,0 +1,39 @@
+﻿-Wl,--component-type,"obj/Release/net10.0/wasi-wasm/wit_bindgen/LogaritmicCalculatorWorld_component_type.wit"
+"/home/uhansen/.nuget/packages/runtime.wasi-wasm.microsoft.dotnet.ilcompiler.llvm/10.0.0-alpha.1.25162.1/framework/libSystem.Native.a"
+"/home/uhansen/.nuget/packages/runtime.wasi-wasm.microsoft.dotnet.ilcompiler.llvm/10.0.0-alpha.1.25162.1/framework/libSystem.Native.TimeZoneData.a"
+"/home/uhansen/.nuget/packages/runtime.wasi-wasm.microsoft.dotnet.ilcompiler.llvm/10.0.0-alpha.1.25162.1/sdk/libbootstrapperdll.o"
+"/home/uhansen/.nuget/packages/runtime.wasi-wasm.microsoft.dotnet.ilcompiler.llvm/10.0.0-alpha.1.25162.1/sdk/libPortableRuntime.a"
+"/home/uhansen/.nuget/packages/runtime.wasi-wasm.microsoft.dotnet.ilcompiler.llvm/10.0.0-alpha.1.25162.1/sdk/libstandalonegc-disabled.a"
+"/home/uhansen/.nuget/packages/runtime.wasi-wasm.microsoft.dotnet.ilcompiler.llvm/10.0.0-alpha.1.25162.1/sdk/libEmulatedExceptionHandling.a"
+"obj/Release/net10.0/wasi-wasm/native/logaritmic-calculator.external.o"
+"obj/Release/net10.0/wasi-wasm/native/logaritmic-calculator.o"
+"obj/Release/net10.0/wasi-wasm/native/logaritmic-calculator.0.o"
+"obj/Release/net10.0/wasi-wasm/native/logaritmic-calculator.1.o"
+"obj/Release/net10.0/wasi-wasm/native/logaritmic-calculator.10.o"
+"obj/Release/net10.0/wasi-wasm/native/logaritmic-calculator.11.o"
+"obj/Release/net10.0/wasi-wasm/native/logaritmic-calculator.12.o"
+"obj/Release/net10.0/wasi-wasm/native/logaritmic-calculator.13.o"
+"obj/Release/net10.0/wasi-wasm/native/logaritmic-calculator.14.o"
+"obj/Release/net10.0/wasi-wasm/native/logaritmic-calculator.15.o"
+"obj/Release/net10.0/wasi-wasm/native/logaritmic-calculator.2.o"
+"obj/Release/net10.0/wasi-wasm/native/logaritmic-calculator.3.o"
+"obj/Release/net10.0/wasi-wasm/native/logaritmic-calculator.4.o"
+"obj/Release/net10.0/wasi-wasm/native/logaritmic-calculator.5.o"
+"obj/Release/net10.0/wasi-wasm/native/logaritmic-calculator.6.o"
+"obj/Release/net10.0/wasi-wasm/native/logaritmic-calculator.7.o"
+"obj/Release/net10.0/wasi-wasm/native/logaritmic-calculator.8.o"
+"obj/Release/net10.0/wasi-wasm/native/logaritmic-calculator.9.o"
+"obj/Release/net10.0/wasi-wasm/native/logaritmic-calculator.debug.o"
+-Wl,--component-type,"/home/uhansen/.nuget/packages/runtime.wasi-wasm.microsoft.dotnet.ilcompiler.llvm/10.0.0-alpha.1.25162.1/framework/WasiHttpWorld_component_type.wit"
+-o "bin/Release/net10.0/wasi-wasm/native/logaritmic-calculator.wasm"
+-g3
+-target wasm32-unknown-wasip2
+--sysroot="/home/uhansen/.wasi-sdk/wasi-sdk-24.0/share/wasi-sysroot"
+-Wl,--export=buildbyhansen:logaritmic-calculator/logaritmic@0.1.0#e
+-Wl,--export=buildbyhansen:logaritmic-calculator/logaritmic@0.1.0#ln
+-Wl,--unresolved-symbols=ignore-all
+-lstdc++ -lwasi-emulated-process-clocks -lwasi-emulated-signal -lwasi-emulated-getpid
+-Wl,--max-memory=2147483648
+-Wl,--global-base=1024
+-Wl,-z,stack-size=1048576
+-mexec-model=reactor

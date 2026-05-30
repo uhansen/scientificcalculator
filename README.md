@@ -7,16 +7,16 @@ WebAssembly components built in Rust, TypeScript, C#, and Python, following the 
 | `arithmetic-calculator` | Rust | `add` `subtract` `multiply` `divide` |
 | `trigonometric-calculator` | Rust | `sin` `cos` `tan` `arctan` |
 | `moddiv` | TypeScript | `mod` `div` |
-| `logaritmic-calculater` | C# / .NET 10 | `e` `ln` |
+| `logaritmic-calculator` | C# / .NET 10 | `e` `ln` |
 | `statistics-calculator` | Python | `sum` `avg` |
-| `the-calculater` | Composed (all 5) | `calculate(string) → string` |
-| `thecalculaterspin` | Rust (Spin HTTP app) | HTTP API wrapping `the-calculater` |
+| `the-calculator` | Composed (all 5) | `calculate(string) → string` |
+| `thecalculatorspin` | Rust (Spin HTTP app) | HTTP API wrapping `the-calculator` |
 
 ## Components
 
-### `the-calculater` (Rust shell — composed from all five sub-components)
+### `the-calculator` (Rust shell — composed from all five sub-components)
 A composed WASM component that bundles all five calculators into a single binary.
-Exports the `buildbyhansen:the-calculater/calculator@0.1.0` interface with one method:
+Exports the `buildbyhansen:the-calculator/calculator@0.1.0` interface with one method:
 
 ```
 calculate(expr: string) -> string
@@ -51,7 +51,7 @@ Exports a `moddiv` interface with:
 - `mod(x: f64, y: f64) -> f64` — remainder of x divided by y
 - `div(x: f64, y: f64) -> f64` — quotient of x divided by y
 
-### `logaritmic-calculater` (C# / .NET 10, componentize-dotnet)
+### `logaritmic-calculator` (C# / .NET 10, componentize-dotnet)
 Exports a `logaritmic` interface with:
 - `e() -> f64` — Euler's number (≈ 2.71828…)
 - `ln(x: f64) -> f64` — natural logarithm of x
@@ -61,15 +61,15 @@ Exports a `statistics` interface with:
 - `sum(numbers: list<f64>) -> f64` — sum of a list of numbers
 - `avg(numbers: list<f64>) -> f64` — arithmetic mean (returns 0.0 for empty list)
 
-### `thecalculaterspin` (Rust, Spin v4 HTTP app)
-An HTTP application built with [Spin](https://spinframework.dev) that wraps `the-calculater` and exposes it over HTTP. Send a GET request with an `?calculate=` query parameter; the result is returned as plain text.
+### `thecalculatorspin` (Rust, Spin v4 HTTP app)
+An HTTP application built with [Spin](https://spinframework.dev) that wraps `the-calculator` and exposes it over HTTP. Send a GET request with an `?calculate=` query parameter; the result is returned as plain text.
 
-### `thecalculatercli` (Rust, WASI CLI)
-An interactive command-line REPL that imports `the-calculater` via WIT and is composed with it using `wac`. Run with `wasmtime run` for an interactive calculator prompt.
+### `thecalculatorcli` (Rust, WASI CLI)
+An interactive command-line REPL that imports `the-calculator` via WIT and is composed with it using `wac`. Run with `wasmtime run` for an interactive calculator prompt.
 
 ## Prerequisites
 
-Install the tools required for the languages you want to build. All five are needed to compose `the-calculater`.
+Install the tools required for the languages you want to build. All five are needed to compose `the-calculator`.
 
 ### All components
 ```sh
@@ -89,7 +89,7 @@ No additional tools — the Rust toolchain above is sufficient.
 ### `moddiv` (TypeScript)
 Requires [Node.js](https://nodejs.org/) ≥ 18. npm dependencies (`jco`, `typescript`) are installed locally via `npm install`.
 
-### `logaritmic-calculater` (C# / .NET)
+### `logaritmic-calculator` (C# / .NET)
 Requires [.NET 10 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0).
 
 ### `statistics-calculator` (Python)
@@ -98,7 +98,7 @@ Requires Python 3.10+ and `componentize-py`:
 pip install componentize-py
 ```
 
-### `thecalculaterspin` (Spin HTTP app)
+### `thecalculatorspin` (Spin HTTP app)
 Requires [Spin v4](https://spinframework.dev/install) in addition to the Rust toolchain and `wac-cli` listed above:
 ```sh
 # Install Spin
@@ -107,9 +107,9 @@ curl -fsSL https://spinframework.dev/downloads/install.sh | bash
 
 ## Build
 
-The five sub-components must be built before the composed `the-calculater` binary can be produced. Follow steps 1–5 in order, then run the composition in step 6.
+The five sub-components must be built before the composed `the-calculator` binary can be produced. Follow steps 1–5 in order, then run the composition in step 6.
 
-### Step 1 — Rust: arithmetic-calculator, trigonometric-calculator, and the-calculater shell
+### Step 1 — Rust: arithmetic-calculator, trigonometric-calculator, and the-calculator shell
 
 The Cargo workspace at the repo root builds all three Rust crates at once:
 
@@ -122,14 +122,14 @@ Output (in the shared `target/` directory):
 ```
 target/wasm32-wasip2/release/arithmetic_calculator.wasm
 target/wasm32-wasip2/release/trigonometric_calculator.wasm
-target/wasm32-wasip2/release/the_calculater.wasm   ← shell (imports not yet satisfied)
+target/wasm32-wasip2/release/the_calculator.wasm   ← shell (imports not yet satisfied)
 ```
 
 To build a single crate:
 ```sh
 cargo build -p arithmetic-calculator --target wasm32-wasip2 --release
 cargo build -p trigonometric-calculator --target wasm32-wasip2 --release
-cargo build -p the-calculater --target wasm32-wasip2 --release
+cargo build -p the-calculator --target wasm32-wasip2 --release
 ```
 
 ### Step 2 — TypeScript: moddiv
@@ -143,15 +143,15 @@ cd ..
 
 Output: `moddiv/moddiv.wasm`
 
-### Step 3 — C#: logaritmic-calculater
+### Step 3 — C#: logaritmic-calculator
 
 ```sh
-cd logaritmic-calculater
+cd logaritmic-calculator
 dotnet build -c Release
 cd ..
 ```
 
-Output: `logaritmic-calculater/bin/Release/net10.0/wasi-wasm/native/logaritmic-calculater.wasm`
+Output: `logaritmic-calculator/bin/Release/net10.0/wasi-wasm/native/logaritmic-calculator.wasm`
 
 ### Step 4 — Python: statistics-calculator
 
@@ -171,11 +171,11 @@ Confirm each sub-component exports the expected interface:
 wasm-tools component wit target/wasm32-wasip2/release/arithmetic_calculator.wasm
 wasm-tools component wit target/wasm32-wasip2/release/trigonometric_calculator.wasm
 wasm-tools component wit moddiv/moddiv.wasm
-wasm-tools component wit logaritmic-calculater/bin/Release/net10.0/wasi-wasm/native/logaritmic-calculater.wasm
+wasm-tools component wit logaritmic-calculator/bin/Release/net10.0/wasi-wasm/native/logaritmic-calculator.wasm
 wasm-tools component wit statistics-calculator/statistics-calculator.wasm
 ```
 
-### Step 6 — Compose: the-calculater
+### Step 6 — Compose: the-calculator
 
 `wac plug` wires the exports of each sub-component into the matching imports of the shell, producing a fully self-contained binary. All five sub-components are embedded; only WASI host imports remain external.
 
@@ -184,26 +184,26 @@ wac plug \
   --plug target/wasm32-wasip2/release/arithmetic_calculator.wasm \
   --plug target/wasm32-wasip2/release/trigonometric_calculator.wasm \
   --plug moddiv/moddiv.wasm \
-  --plug logaritmic-calculater/bin/Release/net10.0/wasi-wasm/native/logaritmic-calculater.wasm \
+  --plug logaritmic-calculator/bin/Release/net10.0/wasi-wasm/native/logaritmic-calculator.wasm \
   --plug statistics-calculator/statistics-calculator.wasm \
-  target/wasm32-wasip2/release/the_calculater.wasm \
-  -o the-calculater/the-calculater.wasm
+  target/wasm32-wasip2/release/the_calculator.wasm \
+  -o the-calculator/the-calculator.wasm
 ```
 
-Output: `the-calculater/the-calculater.wasm`
+Output: `the-calculator/the-calculator.wasm`
 
 Verify the composed component exposes only the single `calculate` export and no sub-component imports:
 
 ```sh
-wasm-tools component wit the-calculater/the-calculater.wasm | grep -E "^  (import|export)"
+wasm-tools component wit the-calculator/the-calculator.wasm | grep -E "^  (import|export)"
 ```
 
-### Step 7 — Build and run: thecalculaterspin
+### Step 7 — Build and run: thecalculatorspin
 
 ```sh
-cd thecalculaterspin
+cd thecalculatorspin
 
-# Compile to WASM and compose with the-calculater
+# Compile to WASM and compose with the-calculator
 spin build
 
 # Start the HTTP server
@@ -217,56 +217,56 @@ curl "http://127.0.0.1:3000/?calculate=sin(30)"        # → 0.5
 curl "http://127.0.0.1:3000/?calculate=multiply(6,7)"  # → 42
 ```
 
-See **[Run with Spin](#run-with-spin-thecalculaterspin)** below for the full list of curl examples.
+See **[Run with Spin](#run-with-spin-thecalculatorspin)** below for the full list of curl examples.
 
 ## Run with wasmtime
 
 Requires [wasmtime](https://wasmtime.dev/) ≥ 18. Arguments use [WAVE syntax](https://github.com/bytecodealliance/wasm-tools/tree/main/crates/wasm-wave#readme) — the function call and its arguments are passed as a single quoted string.
 
-### `the-calculater` (composed component)
+### `the-calculator` (composed component)
 
 ```sh
 # Arithmetic
-wasmtime run --invoke 'calculate("add(2,2)")' the-calculater/the-calculater.wasm
-wasmtime run --invoke 'calculate("subtract(10,3)")' the-calculater/the-calculater.wasm
-wasmtime run --invoke 'calculate("multiply(6,7)")' the-calculater/the-calculater.wasm
-wasmtime run --invoke 'calculate("divide(9,3)")' the-calculater/the-calculater.wasm
+wasmtime run --invoke 'calculate("add(2,2)")' the-calculator/the-calculator.wasm
+wasmtime run --invoke 'calculate("subtract(10,3)")' the-calculator/the-calculator.wasm
+wasmtime run --invoke 'calculate("multiply(6,7)")' the-calculator/the-calculator.wasm
+wasmtime run --invoke 'calculate("divide(9,3)")' the-calculator/the-calculator.wasm
 
 # Trigonometric (degrees)
-wasmtime run --invoke 'calculate("sin(90)")' the-calculater/the-calculater.wasm
-wasmtime run --invoke 'calculate("cos(0)")' the-calculater/the-calculater.wasm
-wasmtime run --invoke 'calculate("tan(45)")' the-calculater/the-calculater.wasm
-wasmtime run --invoke 'calculate("arctan(1)")' the-calculater/the-calculater.wasm
+wasmtime run --invoke 'calculate("sin(90)")' the-calculator/the-calculator.wasm
+wasmtime run --invoke 'calculate("cos(0)")' the-calculator/the-calculator.wasm
+wasmtime run --invoke 'calculate("tan(45)")' the-calculator/the-calculator.wasm
+wasmtime run --invoke 'calculate("arctan(1)")' the-calculator/the-calculator.wasm
 
 # Modulo / integer division
-wasmtime run --invoke 'calculate("mod(10,3)")' the-calculater/the-calculater.wasm
-wasmtime run --invoke 'calculate("div(10,3)")' the-calculater/the-calculater.wasm
+wasmtime run --invoke 'calculate("mod(10,3)")' the-calculator/the-calculator.wasm
+wasmtime run --invoke 'calculate("div(10,3)")' the-calculator/the-calculator.wasm
 
 # Logarithmic
-wasmtime run --invoke 'calculate("e()")' the-calculater/the-calculater.wasm
-wasmtime run --invoke 'calculate("ln(2.718281828)")' the-calculater/the-calculater.wasm
+wasmtime run --invoke 'calculate("e()")' the-calculator/the-calculator.wasm
+wasmtime run --invoke 'calculate("ln(2.718281828)")' the-calculator/the-calculator.wasm
 
 # Statistics (variable number of arguments)
-wasmtime run --invoke 'calculate("sum(1,2,3,4,5)")' the-calculater/the-calculater.wasm
-wasmtime run --invoke 'calculate("avg(1,2,3,4,5)")' the-calculater/the-calculater.wasm
+wasmtime run --invoke 'calculate("sum(1,2,3,4,5)")' the-calculator/the-calculator.wasm
+wasmtime run --invoke 'calculate("avg(1,2,3,4,5)")' the-calculator/the-calculator.wasm
 ```
 
 Errors are returned as strings:
 
 ```sh
-wasmtime run --invoke 'calculate("divide(5,0)")' the-calculater/the-calculater.wasm
+wasmtime run --invoke 'calculate("divide(5,0)")' the-calculator/the-calculator.wasm
 # → "Error: division by zero"
 
-wasmtime run --invoke 'calculate("unknown(1)")' the-calculater/the-calculater.wasm
+wasmtime run --invoke 'calculate("unknown(1)")' the-calculator/the-calculator.wasm
 # → "Error: Unknown function: 'unknown'"
 ```
 
 
 
 
-## Run interactively with `thecalculatercli`
+## Run interactively with `thecalculatorcli`
 
-`thecalculatercli` is a WASI CLI Rust component that provides an interactive calculator prompt. It imports `the-calculater` and is composed with it using `wac`.
+`thecalculatorcli` is a WASI CLI Rust component that provides an interactive calculator prompt. It imports `the-calculator` and is composed with it using `wac`.
 
 ### Prerequisites
 
@@ -277,18 +277,18 @@ wasmtime run --invoke 'calculate("unknown(1)")' the-calculater/the-calculater.wa
 ### Build
 
 ```sh
-cd thecalculatercli
+cd thecalculatorcli
 cargo build --target wasm32-wasip2 --release
 wac plug \
-  --plug ../the-calculater/the-calculater.wasm \
-  target/wasm32-wasip2/release/thecalculatercli.wasm \
-  -o thecalculatercli-composed.wasm
+  --plug ../the-calculator/the-calculator.wasm \
+  target/wasm32-wasip2/release/thecalculatorcli.wasm \
+  -o thecalculatorcli-composed.wasm
 ```
 
 ### Run
 
 ```sh
-wasmtime run thecalculatercli/thecalculatercli-composed.wasm
+wasmtime run thecalculatorcli/thecalculatorcli-composed.wasm
 ```
 
 Example session:
@@ -309,13 +309,13 @@ calculate: sum(1,2,3,4,5)
 calculate: q
 ```
 
-Type any expression supported by `the-calculater`. Enter `q` or `quit` to exit.
+Type any expression supported by `the-calculator`. Enter `q` or `quit` to exit.
 
 ---
 
-## Run with Spin (`thecalculaterspin`)
+## Run with Spin (`thecalculatorspin`)
 
-`thecalculaterspin` is a Spin v4 HTTP application that exposes `the-calculater` as an HTTP endpoint. Send a GET request with a `?calculate=` query parameter; the result is returned as plain text.
+`thecalculatorspin` is a Spin v4 HTTP application that exposes `the-calculator` as an HTTP endpoint. Send a GET request with a `?calculate=` query parameter; the result is returned as plain text.
 
 ### Prerequisites
 
@@ -331,28 +331,28 @@ cargo install wac-cli
 ### Build the Spin app
 
 ```sh
-cd thecalculaterspin
+cd thecalculatorspin
 
 # 1. Compile to WASM (wasm32-wasip2)
 cargo build --target wasm32-wasip2 --release
 
-# 2. Compose with the-calculater
-wac plug --plug ../the-calculater/the-calculater.wasm \
-  target/wasm32-wasip2/release/thecalculaterspin.wasm \
-  -o thecalculaterspin-composed.wasm
+# 2. Compose with the-calculator
+wac plug --plug ../the-calculator/the-calculator.wasm \
+  target/wasm32-wasip2/release/thecalculatorspin.wasm \
+  -o thecalculatorspin-composed.wasm
 ```
 
 Or use `spin build` to run both steps via the build command in `spin.toml`:
 
 ```sh
-cd thecalculaterspin
+cd thecalculatorspin
 spin build
 ```
 
 ### Run and call the HTTP API
 
 ```sh
-cd thecalculaterspin
+cd thecalculatorspin
 spin up --listen 127.0.0.1:3000
 ```
 
@@ -386,7 +386,7 @@ curl "http://127.0.0.1:3000/?calculate=avg(1,2,3,4,5)"  # → 3
 
 ## Deploy on k3d / SpinKube (local Kubernetes)
 
-The `thecalculaterdepl/` folder contains everything needed to run `thecalculaterspin` on a local [k3d](https://k3d.io) cluster with [SpinKube](https://www.spinkube.dev) and [KEDA](https://keda.sh) HTTP autoscaling.
+The `thecalculatordepl/` folder contains everything needed to run `thecalculatorspin` on a local [k3d](https://k3d.io) cluster with [SpinKube](https://www.spinkube.dev) and [KEDA](https://keda.sh) HTTP autoscaling.
 
 ### How it works
 
@@ -394,7 +394,7 @@ The `thecalculaterdepl/` folder contains everything needed to run `thecalculater
 curl localhost:3000
   → Traefik (k3d port 3000→80)
     → KEDA HTTP interceptor proxy  ← buffers requests, triggers scale-up
-      → thecalculaterspin (SpinApp pod, wasmtime-spin-v2 runtime)
+      → thecalculatorspin (SpinApp pod, wasmtime-spin-v2 runtime)
 ```
 
 KEDA HTTP Add-on watches incoming request volume and scales the deployment between 1 and 5 replicas. After 60 s of inactivity, replicas return to 1.
@@ -413,12 +413,12 @@ KEDA HTTP Add-on watches incoming request volume and scales the deployment betwe
 
 ```sh
 # From the repo root — one command does everything:
-bash thecalculaterdepl/deploy.sh
+bash thecalculatordepl/deploy.sh
 ```
 
 The script performs these steps in order:
 
-1. **Push image** — authenticates to `ghcr.io` via GitHub CLI token, runs `spin registry push ghcr.io/uhansen/thecalculaterspin:latest`, and creates an `imagePullSecret` in the cluster so nodes can pull the private package
+1. **Push image** — authenticates to `ghcr.io` via GitHub CLI token, runs `spin registry push ghcr.io/uhansen/thecalculatorspin:latest`, and creates an `imagePullSecret` in the cluster so nodes can pull the private package
 2. **Create cluster** — k3d cluster using `ghcr.io/spinframework/containerd-shim-spin/k3d:v0.24.0` (Spin shim pre-installed, no extra operator needed)
 3. **cert-manager** v1.16.3 — required by spin-operator webhooks
 4. **spin-operator** v0.6.1 — SpinApp CRD controller
@@ -441,7 +441,7 @@ curl "http://localhost:3000/?calculate=sin(30)"         # → 0.5
 
 ```sh
 # Current state of the HTTPScaledObject
-kubectl get httpscaledobject thecalculaterspin
+kubectl get httpscaledobject thecalculatorspin
 
 # Watch pods scale up under load
 kubectl get pods -n default -w
@@ -454,23 +454,23 @@ kubectl get hpa -n default
 ### Tear down
 
 ```sh
-bash thecalculaterdepl/teardown.sh
+bash thecalculatordepl/teardown.sh
 ```
 
 ### Files
 
 | File | Purpose |
 |---|---|
-| `thecalculaterdepl/deploy.sh` | Full end-to-end deploy script |
-| `thecalculaterdepl/teardown.sh` | Delete the cluster |
-| `thecalculaterdepl/k3d-config.yaml` | k3d cluster spec (shim node image, port 3000→80) |
-| `thecalculaterdepl/spinapp.yaml` | SpinApp CR + ExternalName proxy Service + Traefik Ingress |
-| `thecalculaterdepl/httpscaledobject.yaml` | KEDA HTTPScaledObject (min=1 → max=5) |
+| `thecalculatordepl/deploy.sh` | Full end-to-end deploy script |
+| `thecalculatordepl/teardown.sh` | Delete the cluster |
+| `thecalculatordepl/k3d-config.yaml` | k3d cluster spec (shim node image, port 3000→80) |
+| `thecalculatordepl/spinapp.yaml` | SpinApp CR + ExternalName proxy Service + Traefik Ingress |
+| `thecalculatordepl/httpscaledobject.yaml` | KEDA HTTPScaledObject (min=1 → max=5) |
 
 ### Notes
 
-- **ghcr.io image:** `ghcr.io/uhansen/thecalculaterspin:latest` — stored permanently in GitHub Container Registry (no expiry). The package is private; `deploy.sh` automatically creates an `imagePullSecret` (`ghcr-pull-secret`) in the cluster using the GitHub token. Requires a GitHub token with `write:packages` scope to push (set `GITHUB_TOKEN` env var, or ensure `gh auth token` has the scope — run `gh auth refresh -s write:packages` if needed).
-- **Re-deploying:** Re-run `deploy.sh` to push a new build and refresh the imagePullSecret, then `kubectl rollout restart deployment/thecalculaterspin`.
+- **ghcr.io image:** `ghcr.io/uhansen/thecalculatorspin:latest` — stored permanently in GitHub Container Registry (no expiry). The package is private; `deploy.sh` automatically creates an `imagePullSecret` (`ghcr-pull-secret`) in the cluster using the GitHub token. Requires a GitHub token with `write:packages` scope to push (set `GITHUB_TOKEN` env var, or ensure `gh auth token` has the scope — run `gh auth refresh -s write:packages` if needed).
+- **Re-deploying:** Re-run `deploy.sh` to push a new build and refresh the imagePullSecret, then `kubectl rollout restart deployment/thecalculatorspin`.
 - **min=1 (not 0):** The spin-operator reconciles `replicas: 1` from the SpinApp spec. Setting `min: 1` in the `HTTPScaledObject` keeps both controllers in agreement. True scale-to-zero would require removing the `replicas` field from the SpinApp and is not yet supported cleanly by spin-operator v0.6.1.
 - The cluster uses Spin shim **v0.24.0** (Spin 3.6.3 / wasmtime 42). The app was built with spin-sdk 5.2.0 (Spin 3.6.1 series) — compatible.
 
@@ -480,12 +480,12 @@ bash thecalculaterdepl/teardown.sh
 |---|---|---|
 | `target/wasm32-wasip2/release/trigonometric_calculator.wasm` | 27 KB | Rust — no runtime overhead |
 | `target/wasm32-wasip2/release/arithmetic_calculator.wasm` | 66 KB | Rust — no runtime overhead |
-| `target/wasm32-wasip2/release/thecalculaterspin.wasm` | 262 KB | Spin HTTP shell (before composition) |
-| `logaritmic-calculater/bin/Release/net10.0/wasi-wasm/native/logaritmic-calculater.wasm` | 2.5 MB | C# / .NET 10 |
+| `target/wasm32-wasip2/release/thecalculatorspin.wasm` | 262 KB | Spin HTTP shell (before composition) |
+| `logaritmic-calculator/bin/Release/net10.0/wasi-wasm/native/logaritmic-calculator.wasm` | 2.5 MB | C# / .NET 10 |
 | `moddiv/moddiv.wasm` | 12 MB | TypeScript — embeds StarlingMonkey JS engine |
 | `statistics-calculator/statistics-calculator.wasm` | 18 MB | Python — embeds CPython runtime |
-| `the-calculater/the-calculater.wasm` | 32 MB | Composed: all 5 sub-components bundled |
-| `thecalculaterspin/thecalculaterspin-composed.wasm` | 32 MB | Composed Spin app (Spin shell + the-calculater) |
-| `thecalculatercli/thecalculatercli-composed.wasm` | 32 MB | Composed CLI REPL (CLI shell + the-calculater) |
+| `the-calculator/the-calculator.wasm` | 32 MB | Composed: all 5 sub-components bundled |
+| `thecalculatorspin/thecalculatorspin-composed.wasm` | 32 MB | Composed Spin app (Spin shell + the-calculator) |
+| `thecalculatorcli/thecalculatorcli-composed.wasm` | 32 MB | Composed CLI REPL (CLI shell + the-calculator) |
 
 > The size difference between languages is mainly due to embedded runtimes: Rust compiles directly to WASM with no runtime, while TypeScript (SpiderMonkey/StarlingMonkey) and Python (CPython) must bundle their interpreters inside the component.

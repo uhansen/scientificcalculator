@@ -2,6 +2,6 @@
 members = [
     "arithmetic-calculator",
     "trigonometric-calculator",
-    "the-calculater",
+    "the-calculator",
 ]
 resolver = "2"

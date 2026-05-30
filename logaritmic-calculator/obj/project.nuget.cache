@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "dgSpecHash": "y6DwNsOqyEI=",
+  "success": true,
+  "projectFilePath": "/home/uhansen/source/projects/scientificcalculater/logaritmic-calculator/logaritmic-calculator.csproj",
+  "expectedPackageFiles": [
+    "/home/uhansen/.nuget/packages/bytecodealliance.componentize.dotnet.wasm.sdk/0.7.0-preview00010/bytecodealliance.componentize.dotnet.wasm.sdk.0.7.0-preview00010.nupkg.sha512",
+    "/home/uhansen/.nuget/packages/bytecodealliance.componentize.dotnet.witbindgen/0.7.0-preview00010/bytecodealliance.componentize.dotnet.witbindgen.0.7.0-preview00010.nupkg.sha512",
+    "/home/uhansen/.nuget/packages/microsoft.dotnet.ilcompiler.llvm/10.0.0-alpha.1.25162.1/microsoft.dotnet.ilcompiler.llvm.10.0.0-alpha.1.25162.1.nupkg.sha512",
+    "/home/uhansen/.nuget/packages/microsoft.net.illink.tasks/10.0.8/microsoft.net.illink.tasks.10.0.8.nupkg.sha512",
+    "/home/uhansen/.nuget/packages/runtime.linux-x64.microsoft.dotnet.ilcompiler.llvm/10.0.0-alpha.1.25162.1/runtime.linux-x64.microsoft.dotnet.ilcompiler.llvm.10.0.0-alpha.1.25162.1.nupkg.sha512",
+    "/home/uhansen/.nuget/packages/runtime.wasi-wasm.microsoft.dotnet.ilcompiler.llvm/10.0.0-alpha.1.25162.1/runtime.wasi-wasm.microsoft.dotnet.ilcompiler.llvm.10.0.0-alpha.1.25162.1.nupkg.sha512"
+  ],
+  "logs": []
+}
