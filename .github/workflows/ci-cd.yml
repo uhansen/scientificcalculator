@@ -222,22 +222,15 @@ jobs:
             --json number \
             --jq '.[0].number' 2>/dev/null || echo "")
 
+          PR_BODY=$(printf '## Automated CI/CD PR\n\n**Branch**: `%s`\n**Image**: `ghcr.io/uhansen/thecalculatorspin:%s`\n**Commit**: %s\n\nAll WASM components built and OCI image pushed to ghcr.io.\n\n---\n' \
+            "${BRANCH}" "${TAG}" "${GITHUB_SHA}")
+
           if [ -z "${EXISTING}" ]; then
             gh pr create \
               --base master \
               --head "${BRANCH}" \
-              --title "ci: ${BRANCH} → master [${TAG}]" \
-              --body "## Automated CI/CD PR
-
-**Branch**: \`${BRANCH}\`
-**Image**: \`ghcr.io/uhansen/thecalculatorspin:${TAG}\`
-**Commit**: ${GITHUB_SHA}
-
-All WASM components built and OCI image pushed to ghcr.io.
-
----
-*This PR was created automatically by the CI/CD pipeline.*
-*Waiting for GitHub Copilot review before auto-merging.*"
+              --title "ci: ${BRANCH} -> master [${TAG}]" \
+              --body "${PR_BODY}*This PR was created automatically by the CI/CD pipeline.*"
 
             # Re-fetch PR number after creation
             EXISTING=$(gh pr list \
@@ -248,17 +241,7 @@ All WASM components built and OCI image pushed to ghcr.io.
           else
             # Update existing PR body with latest image tag
             gh pr edit "${EXISTING}" \
-              --body "## Automated CI/CD PR
-
-**Branch**: \`${BRANCH}\`
-**Image**: \`ghcr.io/uhansen/thecalculatorspin:${TAG}\`
-**Commit**: ${GITHUB_SHA}
-
-All WASM components built and OCI image pushed to ghcr.io.
-
----
-*This PR was updated automatically by the CI/CD pipeline.*
-*Waiting for GitHub Copilot review before auto-merging.*"
+              --body "${PR_BODY}*This PR was updated automatically by the CI/CD pipeline.*"
           fi
 
           # Request Copilot code review (requires Copilot code review enabled in repo settings)
