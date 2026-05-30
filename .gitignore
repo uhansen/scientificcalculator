@@ -1,26 +1,26 @@
 /target
-moddiv-calculator/node_modules
-moddiv-calculator/moddiv-calculator.js
-moddiv-calculator/moddiv-calculator.wasm
-moddiv-calculator/moddiv.js
-moddiv-calculator/moddiv.wasm
-logaritmic-calculator/bin
-logaritmic-calculator/obj
-the-calculator/the-calculator.wasm
-statistics-calculator/wit_world
-statistics-calculator/statistics-calculator.wasm
-statistics-calculator/__pycache__
-statistics-calculator/componentize_py_async_support
-statistics-calculator/componentize_py_runtime.pyi
-statistics-calculator/componentize_py_types.py
-statistics-calculator/poll_loop.py
+components/moddiv-calculator/node_modules
+components/moddiv-calculator/moddiv-calculator.js
+components/moddiv-calculator/moddiv-calculator.wasm
+components/moddiv-calculator/moddiv.js
+components/moddiv-calculator/moddiv.wasm
+components/logaritmic-calculator/bin
+components/logaritmic-calculator/obj
+components/the-calculator/the-calculator.wasm
+components/statistics-calculator/wit_world
+components/statistics-calculator/statistics-calculator.wasm
+components/statistics-calculator/__pycache__
+components/statistics-calculator/componentize_py_async_support
+components/statistics-calculator/componentize_py_runtime.pyi
+components/statistics-calculator/componentize_py_types.py
+components/statistics-calculator/poll_loop.py
 
 # Spin app build artifacts
-thecalculatorspin/thecalculatorspin-composed.wasm
-thecalculatorspin/.spin/
+applications/thecalculatorspin/thecalculatorspin-composed.wasm
+applications/thecalculatorspin/.spin/
 
 # CLI build artifacts
-thecalculatorcli/thecalculatorcli-composed.wasm
+applications/thecalculatorcli/thecalculatorcli-composed.wasm
 
 # Spin binary (too large for GitHub)
 spin
@@ -28,5 +28,5 @@ spin.sig
 crt.pem
 
 # .NET build artifacts
-calculatorstresstest/bin/
-calculatorstresstest/obj/
+tests/calculatorstresstest/bin/
+tests/calculatorstresstest/obj/

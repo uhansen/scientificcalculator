@@ -16,5 +16,5 @@ component = "thecalculatorspin"
 source = "thecalculatorspin-composed.wasm"
 allowed_outbound_hosts = []
 [component.thecalculatorspin.build]
-command = "cargo build --target wasm32-wasip2 --release && wac plug --plug ../the-calculator/the-calculator.wasm target/wasm32-wasip2/release/thecalculatorspin.wasm -o thecalculatorspin-composed.wasm"
+command = "cargo build --target wasm32-wasip2 --release && wac plug --plug ../../components/the-calculator/the-calculator.wasm target/wasm32-wasip2/release/thecalculatorspin.wasm -o thecalculatorspin-composed.wasm"
 watch = ["src/**/*.rs", "Cargo.toml"]

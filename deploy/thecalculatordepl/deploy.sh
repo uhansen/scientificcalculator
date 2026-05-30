@@ -17,8 +17,8 @@ KEDA_HTTP_ADDON_VERSION="0.14.0"
 SCALEDOWN_PERIOD=60   # seconds idle before scaling down (min=1)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-SPIN_APP_DIR="${REPO_ROOT}/thecalculatorspin"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+SPIN_APP_DIR="${REPO_ROOT}/applications/thecalculatorspin"
 
 # ---------------------------------------------------------------------------
 # Helpers

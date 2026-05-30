@@ -135,33 +135,33 @@ cargo build -p the-calculator --target wasm32-wasip2 --release
 ### Step 2 — TypeScript: moddiv
 
 ```sh
-cd moddiv-calculator
+cd components/moddiv-calculator
 npm install          # installs jco and typescript locally
 npm run build        # tsc (TS → JS) then jco componentize (JS → WASM)
-cd ..
+cd ../..
 ```
 
-Output: `moddiv-calculator/moddiv-calculator.wasm`
+Output: `components/moddiv-calculator/moddiv-calculator.wasm`
 
 ### Step 3 — C#: logaritmic-calculator
 
 ```sh
-cd logaritmic-calculator
+cd components/logaritmic-calculator
 dotnet build -c Release
-cd ..
+cd ../..
 ```
 
-Output: `logaritmic-calculator/bin/Release/net10.0/wasi-wasm/native/logaritmic-calculator.wasm`
+Output: `components/logaritmic-calculator/bin/Release/net10.0/wasi-wasm/native/logaritmic-calculator.wasm`
 
 ### Step 4 — Python: statistics-calculator
 
 ```sh
-cd statistics-calculator
+cd components/statistics-calculator
 componentize-py --wit-path wit/component.wit --world statistics-calculator componentize app -o statistics-calculator.wasm
-cd ..
+cd ../..
 ```
 
-Output: `statistics-calculator/statistics-calculator.wasm`
+Output: `components/statistics-calculator/statistics-calculator.wasm`
 
 ### Step 5 — Verify sub-components (optional)
 
@@ -170,9 +170,9 @@ Confirm each sub-component exports the expected interface:
 ```sh
 wasm-tools component wit target/wasm32-wasip2/release/arithmetic_calculator.wasm
 wasm-tools component wit target/wasm32-wasip2/release/trigonometric_calculator.wasm
-wasm-tools component wit moddiv-calculator/moddiv-calculator.wasm
-wasm-tools component wit logaritmic-calculator/bin/Release/net10.0/wasi-wasm/native/logaritmic-calculator.wasm
-wasm-tools component wit statistics-calculator/statistics-calculator.wasm
+wasm-tools component wit components/moddiv-calculator/moddiv-calculator.wasm
+wasm-tools component wit components/logaritmic-calculator/bin/Release/net10.0/wasi-wasm/native/logaritmic-calculator.wasm
+wasm-tools component wit components/statistics-calculator/statistics-calculator.wasm
 ```
 
 ### Step 6 — Compose: the-calculator
@@ -183,25 +183,25 @@ wasm-tools component wit statistics-calculator/statistics-calculator.wasm
 wac plug \
   --plug target/wasm32-wasip2/release/arithmetic_calculator.wasm \
   --plug target/wasm32-wasip2/release/trigonometric_calculator.wasm \
-  --plug moddiv-calculator/moddiv-calculator.wasm \
-  --plug logaritmic-calculator/bin/Release/net10.0/wasi-wasm/native/logaritmic-calculator.wasm \
-  --plug statistics-calculator/statistics-calculator.wasm \
+  --plug components/moddiv-calculator/moddiv-calculator.wasm \
+  --plug components/logaritmic-calculator/bin/Release/net10.0/wasi-wasm/native/logaritmic-calculator.wasm \
+  --plug components/statistics-calculator/statistics-calculator.wasm \
   target/wasm32-wasip2/release/the_calculator.wasm \
-  -o the-calculator/the-calculator.wasm
+  -o components/the-calculator/the-calculator.wasm
 ```
 
-Output: `the-calculator/the-calculator.wasm`
+Output: `components/the-calculator/the-calculator.wasm`
 
 Verify the composed component exposes only the single `calculate` export and no sub-component imports:
 
 ```sh
-wasm-tools component wit the-calculator/the-calculator.wasm | grep -E "^  (import|export)"
+wasm-tools component wit components/the-calculator/the-calculator.wasm | grep -E "^  (import|export)"
 ```
 
 ### Step 7 — Build and run: thecalculatorspin
 
 ```sh
-cd thecalculatorspin
+cd applications/thecalculatorspin
 
 # Compile to WASM and compose with the-calculator
 spin build
@@ -227,37 +227,37 @@ Requires [wasmtime](https://wasmtime.dev/) ≥ 18. Arguments use [WAVE syntax](h
 
 ```sh
 # Arithmetic
-wasmtime run --invoke 'calculate("add(2,2)")' the-calculator/the-calculator.wasm
-wasmtime run --invoke 'calculate("subtract(10,3)")' the-calculator/the-calculator.wasm
-wasmtime run --invoke 'calculate("multiply(6,7)")' the-calculator/the-calculator.wasm
-wasmtime run --invoke 'calculate("divide(9,3)")' the-calculator/the-calculator.wasm
+wasmtime run --invoke 'calculate("add(2,2)")' components/the-calculator/the-calculator.wasm
+wasmtime run --invoke 'calculate("subtract(10,3)")' components/the-calculator/the-calculator.wasm
+wasmtime run --invoke 'calculate("multiply(6,7)")' components/the-calculator/the-calculator.wasm
+wasmtime run --invoke 'calculate("divide(9,3)")' components/the-calculator/the-calculator.wasm
 
 # Trigonometric (degrees)
-wasmtime run --invoke 'calculate("sin(90)")' the-calculator/the-calculator.wasm
-wasmtime run --invoke 'calculate("cos(0)")' the-calculator/the-calculator.wasm
-wasmtime run --invoke 'calculate("tan(45)")' the-calculator/the-calculator.wasm
-wasmtime run --invoke 'calculate("arctan(1)")' the-calculator/the-calculator.wasm
+wasmtime run --invoke 'calculate("sin(90)")' components/the-calculator/the-calculator.wasm
+wasmtime run --invoke 'calculate("cos(0)")' components/the-calculator/the-calculator.wasm
+wasmtime run --invoke 'calculate("tan(45)")' components/the-calculator/the-calculator.wasm
+wasmtime run --invoke 'calculate("arctan(1)")' components/the-calculator/the-calculator.wasm
 
 # Modulo / integer division
-wasmtime run --invoke 'calculate("mod(10,3)")' the-calculator/the-calculator.wasm
-wasmtime run --invoke 'calculate("div(10,3)")' the-calculator/the-calculator.wasm
+wasmtime run --invoke 'calculate("mod(10,3)")' components/the-calculator/the-calculator.wasm
+wasmtime run --invoke 'calculate("div(10,3)")' components/the-calculator/the-calculator.wasm
 
 # Logarithmic
-wasmtime run --invoke 'calculate("e()")' the-calculator/the-calculator.wasm
-wasmtime run --invoke 'calculate("ln(2.718281828)")' the-calculator/the-calculator.wasm
+wasmtime run --invoke 'calculate("e()")' components/the-calculator/the-calculator.wasm
+wasmtime run --invoke 'calculate("ln(2.718281828)")' components/the-calculator/the-calculator.wasm
 
 # Statistics (variable number of arguments)
-wasmtime run --invoke 'calculate("sum(1,2,3,4,5)")' the-calculator/the-calculator.wasm
-wasmtime run --invoke 'calculate("avg(1,2,3,4,5)")' the-calculator/the-calculator.wasm
+wasmtime run --invoke 'calculate("sum(1,2,3,4,5)")' components/the-calculator/the-calculator.wasm
+wasmtime run --invoke 'calculate("avg(1,2,3,4,5)")' components/the-calculator/the-calculator.wasm
 ```
 
 Errors are returned as strings:
 
 ```sh
-wasmtime run --invoke 'calculate("divide(5,0)")' the-calculator/the-calculator.wasm
+wasmtime run --invoke 'calculate("divide(5,0)")' components/the-calculator/the-calculator.wasm
 # → "Error: division by zero"
 
-wasmtime run --invoke 'calculate("unknown(1)")' the-calculator/the-calculator.wasm
+wasmtime run --invoke 'calculate("unknown(1)")' components/the-calculator/the-calculator.wasm
 # → "Error: Unknown function: 'unknown'"
 ```
 
@@ -277,10 +277,10 @@ wasmtime run --invoke 'calculate("unknown(1)")' the-calculator/the-calculator.wa
 ### Build
 
 ```sh
-cd thecalculatorcli
+cd applications/thecalculatorcli
 cargo build --target wasm32-wasip2 --release
 wac plug \
-  --plug ../the-calculator/the-calculator.wasm \
+  --plug ../../components/the-calculator/the-calculator.wasm \
   target/wasm32-wasip2/release/thecalculatorcli.wasm \
   -o thecalculatorcli-composed.wasm
 ```
@@ -288,7 +288,7 @@ wac plug \
 ### Run
 
 ```sh
-wasmtime run thecalculatorcli/thecalculatorcli-composed.wasm
+wasmtime run applications/thecalculatorcli/thecalculatorcli-composed.wasm
 ```
 
 Example session:
@@ -331,13 +331,13 @@ cargo install wac-cli
 ### Build the Spin app
 
 ```sh
-cd thecalculatorspin
+cd applications/thecalculatorspin
 
 # 1. Compile to WASM (wasm32-wasip2)
 cargo build --target wasm32-wasip2 --release
 
 # 2. Compose with the-calculator
-wac plug --plug ../the-calculator/the-calculator.wasm \
+wac plug --plug ../../components/the-calculator/the-calculator.wasm \
   target/wasm32-wasip2/release/thecalculatorspin.wasm \
   -o thecalculatorspin-composed.wasm
 ```
@@ -345,14 +345,14 @@ wac plug --plug ../the-calculator/the-calculator.wasm \
 Or use `spin build` to run both steps via the build command in `spin.toml`:
 
 ```sh
-cd thecalculatorspin
+cd applications/thecalculatorspin
 spin build
 ```
 
 ### Run and call the HTTP API
 
 ```sh
-cd thecalculatorspin
+cd applications/thecalculatorspin
 spin up --listen 127.0.0.1:3000
 ```
 
@@ -386,7 +386,7 @@ curl "http://127.0.0.1:3000/?calculate=avg(1,2,3,4,5)"  # → 3
 
 ## Deploy on k3d / SpinKube (local Kubernetes)
 
-The `thecalculatordepl/` folder contains everything needed to run `thecalculatorspin` on a local [k3d](https://k3d.io) cluster with [SpinKube](https://www.spinkube.dev) and [KEDA](https://keda.sh) HTTP autoscaling.
+The `deploy/thecalculatordepl/` folder contains everything needed to run `thecalculatorspin` on a local [k3d](https://k3d.io) cluster with [SpinKube](https://www.spinkube.dev) and [KEDA](https://keda.sh) HTTP autoscaling.
 
 ### How it works
 
@@ -413,7 +413,7 @@ KEDA HTTP Add-on watches incoming request volume and scales the deployment betwe
 
 ```sh
 # From the repo root — one command does everything:
-bash thecalculatordepl/deploy.sh
+bash deploy/thecalculatordepl/deploy.sh
 ```
 
 The script performs these steps in order:
@@ -454,18 +454,18 @@ kubectl get hpa -n default
 ### Tear down
 
 ```sh
-bash thecalculatordepl/teardown.sh
+bash deploy/thecalculatordepl/teardown.sh
 ```
 
 ### Files
 
 | File | Purpose |
 |---|---|
-| `thecalculatordepl/deploy.sh` | Full end-to-end deploy script |
-| `thecalculatordepl/teardown.sh` | Delete the cluster |
-| `thecalculatordepl/k3d-config.yaml` | k3d cluster spec (shim node image, port 3000→80) |
-| `thecalculatordepl/spinapp.yaml` | SpinApp CR + ExternalName proxy Service + Traefik Ingress |
-| `thecalculatordepl/httpscaledobject.yaml` | KEDA HTTPScaledObject (min=1 → max=5) |
+| `deploy/thecalculatordepl/deploy.sh` | Full end-to-end deploy script |
+| `deploy/thecalculatordepl/teardown.sh` | Delete the cluster |
+| `deploy/thecalculatordepl/k3d-config.yaml` | k3d cluster spec (shim node image, port 3000→80) |
+| `deploy/thecalculatordepl/spinapp.yaml` | SpinApp CR + ExternalName proxy Service + Traefik Ingress |
+| `deploy/thecalculatordepl/httpscaledobject.yaml` | KEDA HTTPScaledObject (min=1 → max=5) |
 
 ### Notes
 
@@ -481,11 +481,11 @@ bash thecalculatordepl/teardown.sh
 | `target/wasm32-wasip2/release/trigonometric_calculator.wasm` | 27 KB | Rust — no runtime overhead |
 | `target/wasm32-wasip2/release/arithmetic_calculator.wasm` | 66 KB | Rust — no runtime overhead |
 | `target/wasm32-wasip2/release/thecalculatorspin.wasm` | 262 KB | Spin HTTP shell (before composition) |
-| `logaritmic-calculator/bin/Release/net10.0/wasi-wasm/native/logaritmic-calculator.wasm` | 2.5 MB | C# / .NET 10 |
-| `moddiv-calculator/moddiv-calculator.wasm` | 12 MB | TypeScript — embeds StarlingMonkey JS engine |
-| `statistics-calculator/statistics-calculator.wasm` | 18 MB | Python — embeds CPython runtime |
-| `the-calculator/the-calculator.wasm` | 32 MB | Composed: all 5 sub-components bundled |
-| `thecalculatorspin/thecalculatorspin-composed.wasm` | 32 MB | Composed Spin app (Spin shell + the-calculator) |
-| `thecalculatorcli/thecalculatorcli-composed.wasm` | 32 MB | Composed CLI REPL (CLI shell + the-calculator) |
+| `components/logaritmic-calculator/bin/Release/net10.0/wasi-wasm/native/logaritmic-calculator.wasm` | 2.5 MB | C# / .NET 10 |
+| `components/moddiv-calculator/moddiv-calculator.wasm` | 12 MB | TypeScript — embeds StarlingMonkey JS engine |
+| `components/statistics-calculator/statistics-calculator.wasm` | 18 MB | Python — embeds CPython runtime |
+| `components/the-calculator/the-calculator.wasm` | 32 MB | Composed: all 5 sub-components bundled |
+| `applications/thecalculatorspin/thecalculatorspin-composed.wasm` | 32 MB | Composed Spin app (Spin shell + the-calculator) |
+| `applications/thecalculatorcli/thecalculatorcli-composed.wasm` | 32 MB | Composed CLI REPL (CLI shell + the-calculator) |
 
 > The size difference between languages is mainly due to embedded runtimes: Rust compiles directly to WASM with no runtime, while TypeScript (SpiderMonkey/StarlingMonkey) and Python (CPython) must bundle their interpreters inside the component.
