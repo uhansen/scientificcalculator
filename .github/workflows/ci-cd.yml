@@ -170,6 +170,35 @@ jobs:
           spin registry push "${{ env.IMAGE }}:${{ steps.meta.outputs.image_tag }}"
           echo "Pushed: ${{ env.IMAGE }}:${{ steps.meta.outputs.image_tag }}"
 
+      - name: Also push :latest tag
+        working-directory: applications/thecalculatorspin
+        run: |
+          spin registry push "${{ env.IMAGE }}:latest"
+          echo "Pushed: ${{ env.IMAGE }}:latest"
+
+      # ── Update deployment manifests (GitOps write-back) ────────────────────
+      - name: Update spinapp.yaml with new image tag
+        run: |
+          TAG="${{ steps.meta.outputs.image_tag }}"
+          sed -i "s|image: \"${{ env.IMAGE }}:.*\"|image: \"${{ env.IMAGE }}:${TAG}\"|" \
+            deploy/thecalculatordepl/spinapp.yaml
+          echo "spinapp.yaml updated to use image tag: ${TAG}"
+          grep 'image:' deploy/thecalculatordepl/spinapp.yaml
+
+      - name: Commit and push updated spinapp.yaml
+        run: |
+          TAG="${{ steps.meta.outputs.image_tag }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add deploy/thecalculatordepl/spinapp.yaml
+          if git diff --staged --quiet; then
+            echo "No changes to spinapp.yaml — skipping commit"
+          else
+            git commit -m "ci: update spinapp.yaml image → ${{ env.IMAGE }}:${TAG}"
+            git push
+            echo "Committed and pushed spinapp.yaml update"
+          fi
+
   open-pr:
     name: Open PR → master
     needs: build-and-push
