@@ -1,0 +1,2 @@
+/home/uhansen/source/projects/scientificcalculater/logaritmic-calculater/bin/Debug/net10.0/wasi-wasm/publish/logaritmic-calculater.wasm
+/home/uhansen/source/projects/scientificcalculater/logaritmic-calculater/bin/Debug/net10.0/wasi-wasm/publish/logaritmic-calculater.deps.json

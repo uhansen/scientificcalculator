@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
+    <Import Project="$(NuGetPackageRoot)microsoft.dotnet.ilcompiler.llvm/10.0.0-alpha.1.25162.1/build/Microsoft.DotNet.ILCompiler.LLVM.targets" Condition="Exists('$(NuGetPackageRoot)microsoft.dotnet.ilcompiler.llvm/10.0.0-alpha.1.25162.1/build/Microsoft.DotNet.ILCompiler.LLVM.targets')" />
+    <Import Project="$(NuGetPackageRoot)bytecodealliance.componentize.dotnet.witbindgen/0.7.0-preview00010/build/BytecodeAlliance.Componentize.DotNet.WitBindgen.targets" Condition="Exists('$(NuGetPackageRoot)bytecodealliance.componentize.dotnet.witbindgen/0.7.0-preview00010/build/BytecodeAlliance.Componentize.DotNet.WitBindgen.targets')" />
+    <Import Project="$(NuGetPackageRoot)bytecodealliance.componentize.dotnet.wasm.sdk/0.7.0-preview00010/build/BytecodeAlliance.Componentize.DotNet.Wasm.SDK.targets" Condition="Exists('$(NuGetPackageRoot)bytecodealliance.componentize.dotnet.wasm.sdk/0.7.0-preview00010/build/BytecodeAlliance.Componentize.DotNet.Wasm.SDK.targets')" />
+  </ImportGroup>
+</Project>
