@@ -151,7 +151,7 @@ dotnet build -c Release
 cd ../..
 ```
 
-Output: `components/logaritmic-calculator/bin/Release/net10.0/wasi-wasm/native/logaritmic-calculator.wasm`
+Output: `components/logaritmic-calculator/bin/Release/net10.0/wasi-wasm/publish/logaritmic-calculator.wasm`
 
 ### Step 4 — Python: statistics-calculator
 
@@ -171,7 +171,7 @@ Confirm each sub-component exports the expected interface:
 wasm-tools component wit target/wasm32-wasip2/release/arithmetic_calculator.wasm
 wasm-tools component wit target/wasm32-wasip2/release/trigonometric_calculator.wasm
 wasm-tools component wit components/moddiv-calculator/moddiv-calculator.wasm
-wasm-tools component wit components/logaritmic-calculator/bin/Release/net10.0/wasi-wasm/native/logaritmic-calculator.wasm
+wasm-tools component wit components/logaritmic-calculator/bin/Release/net10.0/wasi-wasm/publish/logaritmic-calculator.wasm
 wasm-tools component wit components/statistics-calculator/statistics-calculator.wasm
 ```
 
@@ -184,7 +184,7 @@ wac plug \
   --plug target/wasm32-wasip2/release/arithmetic_calculator.wasm \
   --plug target/wasm32-wasip2/release/trigonometric_calculator.wasm \
   --plug components/moddiv-calculator/moddiv-calculator.wasm \
-  --plug components/logaritmic-calculator/bin/Release/net10.0/wasi-wasm/native/logaritmic-calculator.wasm \
+  --plug components/logaritmic-calculator/bin/Release/net10.0/wasi-wasm/publish/logaritmic-calculator.wasm \
   --plug components/statistics-calculator/statistics-calculator.wasm \
   target/wasm32-wasip2/release/the_calculator.wasm \
   -o components/the-calculator/the-calculator.wasm
@@ -481,7 +481,7 @@ bash deploy/thecalculatordepl/teardown.sh
 | `target/wasm32-wasip2/release/trigonometric_calculator.wasm` | 27 KB | Rust — no runtime overhead |
 | `target/wasm32-wasip2/release/arithmetic_calculator.wasm` | 66 KB | Rust — no runtime overhead |
 | `target/wasm32-wasip2/release/thecalculatorspin.wasm` | 262 KB | Spin HTTP shell (before composition) |
-| `components/logaritmic-calculator/bin/Release/net10.0/wasi-wasm/native/logaritmic-calculator.wasm` | 2.5 MB | C# / .NET 10 |
+| `components/logaritmic-calculator/bin/Release/net10.0/wasi-wasm/publish/logaritmic-calculator.wasm` | 2.5 MB | C# / .NET 10 |
 | `components/moddiv-calculator/moddiv-calculator.wasm` | 12 MB | TypeScript — embeds StarlingMonkey JS engine |
 | `components/statistics-calculator/statistics-calculator.wasm` | 18 MB | Python — embeds CPython runtime |
 | `components/the-calculator/the-calculator.wasm` | 32 MB | Composed: all 5 sub-components bundled |
