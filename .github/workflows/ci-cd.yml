@@ -1,0 +1,245 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - "topic/**"
+      - "feature/**"
+
+permissions:
+  contents: write
+  packages: write
+  pull-requests: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE: ghcr.io/uhansen/thecalculatorspin
+  SPIN_VERSION: "3.6.1"
+  WAC_VERSION: "0.10.0"
+
+jobs:
+  build-and-push:
+    name: Build & Push OCI image
+    runs-on: ubuntu-latest
+
+    outputs:
+      image_tag: ${{ steps.meta.outputs.image_tag }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compute image tag
+        id: meta
+        run: |
+          BRANCH="${GITHUB_REF_NAME//\//-}"   # replace / with -
+          SHORT_SHA="${GITHUB_SHA::7}"
+          TAG="${BRANCH}-${SHORT_SHA}"
+          echo "image_tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "Image tag: ${TAG}"
+
+      # ── Rust ──────────────────────────────────────────────────────────────
+      - name: Install Rust (stable + wasm32-wasip2)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.93"
+          targets: wasm32-wasip2
+
+      - name: Cache Cargo registry & build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: cargo-
+
+      # ── .NET 10 ───────────────────────────────────────────────────────────
+      - name: Install .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ hashFiles('**/logaritmic-calculator.csproj') }}
+          restore-keys: nuget-
+
+      # ── Node.js ───────────────────────────────────────────────────────────
+      - name: Install Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: components/moddiv-calculator/package-lock.json
+
+      # ── Python ────────────────────────────────────────────────────────────
+      - name: Install Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-componentize-py-0.23.0
+
+      - name: Install componentize-py
+        run: pip install componentize-py==0.23.0
+
+      # ── wac-cli ───────────────────────────────────────────────────────────
+      - name: Cache wac-cli binary
+        id: cache-wac
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/wac
+          key: wac-cli-${{ env.WAC_VERSION }}
+
+      - name: Install wac-cli
+        if: steps.cache-wac.outputs.cache-hit != 'true'
+        run: cargo install wac-cli --version ${{ env.WAC_VERSION }} --locked
+
+      # ── Spin ──────────────────────────────────────────────────────────────
+      - name: Cache Spin binary
+        id: cache-spin
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/bin/spin
+          key: spin-${{ env.SPIN_VERSION }}
+
+      - name: Install Spin
+        if: steps.cache-spin.outputs.cache-hit != 'true'
+        run: |
+          curl -fsSL https://developer.fermyon.com/downloads/install.sh | \
+            bash -s -- -v v${{ env.SPIN_VERSION }}
+          sudo mv spin /usr/local/bin/spin
+
+      # ── Build sub-components ───────────────────────────────────────────────
+      - name: Build Rust components
+        run: cargo build --target wasm32-wasip2 --release
+
+      - name: Build TypeScript moddiv-calculator
+        working-directory: components/moddiv-calculator
+        run: npm ci && npm run build
+
+      - name: Build C# logaritmic-calculator
+        run: dotnet build -c Release components/logaritmic-calculator
+
+      - name: Build Python statistics-calculator
+        working-directory: components/statistics-calculator
+        run: |
+          componentize-py \
+            --wit-path wit/component.wit \
+            --world statistics-calculator \
+            componentize app \
+            -o statistics-calculator.wasm
+
+      # ── Compose the-calculator ─────────────────────────────────────────────
+      - name: Compose the-calculator
+        run: |
+          wac plug \
+            --plug target/wasm32-wasip2/release/arithmetic_calculator.wasm \
+            --plug target/wasm32-wasip2/release/trigonometric_calculator.wasm \
+            --plug components/moddiv-calculator/moddiv-calculator.wasm \
+            --plug components/logaritmic-calculator/bin/Release/net10.0/wasi-wasm/publish/logaritmic-calculator.wasm \
+            --plug components/statistics-calculator/statistics-calculator.wasm \
+            target/wasm32-wasip2/release/the_calculator.wasm \
+            -o components/the-calculator/the-calculator.wasm
+
+      # ── Build Spin app ─────────────────────────────────────────────────────
+      - name: Build Spin app (thecalculatorspin)
+        working-directory: applications/thecalculatorspin
+        run: spin build
+
+      # ── Push OCI image ─────────────────────────────────────────────────────
+      - name: Login to ghcr.io
+        working-directory: applications/thecalculatorspin
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | spin registry login \
+            --username "${{ github.actor }}" \
+            --password-stdin \
+            ghcr.io
+
+      - name: Push OCI image
+        working-directory: applications/thecalculatorspin
+        run: |
+          spin registry push "${{ env.IMAGE }}:${{ steps.meta.outputs.image_tag }}"
+          echo "Pushed: ${{ env.IMAGE }}:${{ steps.meta.outputs.image_tag }}"
+
+  open-pr:
+    name: Open PR → master
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create or update PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="${GITHUB_REF_NAME}"
+          TAG="${{ needs.build-and-push.outputs.image_tag }}"
+
+          # Check if a PR already exists for this branch
+          EXISTING=$(gh pr list \
+            --head "${BRANCH}" \
+            --base master \
+            --json number \
+            --jq '.[0].number' 2>/dev/null || echo "")
+
+          if [ -z "${EXISTING}" ]; then
+            gh pr create \
+              --base master \
+              --head "${BRANCH}" \
+              --title "ci: ${BRANCH} → master [${TAG}]" \
+              --body "## Automated CI/CD PR
+
+**Branch**: \`${BRANCH}\`
+**Image**: \`ghcr.io/uhansen/thecalculatorspin:${TAG}\`
+**Commit**: ${GITHUB_SHA}
+
+All WASM components built and OCI image pushed to ghcr.io.
+
+---
+*This PR was created automatically by the CI/CD pipeline.*
+*Waiting for GitHub Copilot review before auto-merging.*"
+
+            # Re-fetch PR number after creation
+            EXISTING=$(gh pr list \
+              --head "${BRANCH}" \
+              --base master \
+              --json number \
+              --jq '.[0].number')
+          else
+            # Update existing PR body with latest image tag
+            gh pr edit "${EXISTING}" \
+              --body "## Automated CI/CD PR
+
+**Branch**: \`${BRANCH}\`
+**Image**: \`ghcr.io/uhansen/thecalculatorspin:${TAG}\`
+**Commit**: ${GITHUB_SHA}
+
+All WASM components built and OCI image pushed to ghcr.io.
+
+---
+*This PR was updated automatically by the CI/CD pipeline.*
+*Waiting for GitHub Copilot review before auto-merging.*"
+          fi
+
+          # Request Copilot code review (requires Copilot code review enabled in repo settings)
+          # CODEOWNERS (* @github-copilot) auto-requests on PR creation; this is a belt-and-suspenders fallback.
+          gh api \
+            repos/${{ github.repository }}/pulls/${EXISTING}/requested_reviewers \
+            --method POST \
+            -f 'reviewers[]=github-copilot' \
+            2>/dev/null || echo "Note: Copilot review will be requested via CODEOWNERS"
+
+          # Enable auto-merge (merges once review + checks pass)
+          gh pr merge "${EXISTING}" --auto --merge
+          echo "PR #${EXISTING}: auto-merge enabled — merges when Copilot approves"
