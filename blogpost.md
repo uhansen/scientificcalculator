@@ -160,6 +160,105 @@ wasmtime run --invoke 'calculate("add(2,2)")' components/the-calculator/the-calc
 
 The promise of WebAssembly was always portability. The Component Model extends that promise from *run anywhere* to *compose with anything*.
 
+## An Interactive CLI with `thecalculatorcli`
+
+The same composed binary that powers the HTTP service can be used from the command line — no HTTP server, no deployment, just `wasmtime run`. To make this ergonomic, `thecalculatorcli` is a WASI CLI Rust component that wraps `the-calculator` in an interactive REPL.
+
+### What is WASI CLI?
+
+[WASI CLI](https://github.com/WebAssembly/wasi-cli) is a WASI P2 proposal that standardises command-line program behaviour for WASM components: stdin/stdout/stderr streams, environment variables, process exit, and terminal detection. A component that exports `wasi:cli/run` is a proper WASI command — any compliant runtime (Wasmtime ≥ 18) can run it with `wasmtime run`.
+
+When you target `wasm32-wasip2` in Rust and write a `main()` function, the Rust runtime automatically exports `wasi:cli/run`, so the component is a first-class WASI command with no extra boilerplate.
+
+### The implementation
+
+`thecalculatorcli` is a small Rust binary that imports `the-calculator` via WIT and reads from stdin in a loop:
+
+```rust
+wit_bindgen::generate!({
+    path: "wit",
+    world: "calculator-cli",
+    generate_all,
+});
+
+use buildbyhansen::the_calculator::calculator::calculate;
+
+fn main() {
+    println!("Scientific Calculator — type 'q' to quit");
+    println!("Supported: add  subtract  multiply  divide  sin  cos  tan  arctan");
+    println!("           mod  div  e  ln  sum  avg");
+    println!();
+
+    loop {
+        print!("calculate: ");
+        use std::io::Write;
+        std::io::stdout().flush().unwrap();
+
+        let mut line = String::new();
+        match std::io::stdin().read_line(&mut line) {
+            Ok(0) | Err(_) => break,
+            Ok(_) => {}
+        }
+
+        let input = line.trim();
+        if input == "q" || input == "quit" { break; }
+        if input.is_empty() { continue; }
+
+        println!("{}", calculate(input));
+    }
+}
+```
+
+The WIT world mirrors the Spin app's: it imports `buildbyhansen:the-calculator/calculator@0.1.0`. At composition time, `wac plug` embeds the full 32 MB composed calculator binary inside the CLI shell — the same mechanism as `thecalculatorspin`.
+
+### Build and run
+
+```sh
+cd applications/thecalculatorcli
+cargo build --target wasm32-wasip2 --release
+wac plug \
+  --plug ../../components/the-calculator/the-calculator.wasm \
+  target/wasm32-wasip2/release/thecalculatorcli.wasm \
+  -o thecalculatorcli-composed.wasm
+```
+
+```sh
+wasmtime run applications/thecalculatorcli/thecalculatorcli-composed.wasm
+```
+
+Example session:
+
+```
+Scientific Calculator — type 'q' to quit
+Supported: add  subtract  multiply  divide  sin  cos  tan  arctan
+           mod  div  e  ln  sum  avg
+
+calculate: add(2,2)
+4
+calculate: multiply(6,7)
+42
+calculate: sin(30)
+0.49999999999999994
+calculate: sum(1,2,3,4,5)
+15
+calculate: q
+```
+
+You can verify what the component actually exports:
+
+```sh
+wasm-tools component wit thecalculatorcli/thecalculatorcli-composed.wasm | grep -E "export|run"
+# → export wasi:cli/run@0.2.6
+```
+
+This confirms it is a proper WASI P2 command. The Rust `main()` function maps directly to `wasi:cli/run` — no extra configuration needed.
+
+### Why this matters
+
+The same WIT interface and composition tool (`wac plug`) used to build the HTTP service powers the CLI REPL. `the-calculator` is not a library — it is a self-contained binary component with a stable, versioned interface. Consuming it from a CLI or an HTTP handler requires nothing more than declaring the import in WIT and composing at build time. The Component Model's interface contract is the only shared dependency.
+
+---
+
 ## Deploying as a Spin HTTP Application
 
 Building a composed WASM binary is satisfying, but invoking it with `wasmtime run --invoke` from the command line is not how most software gets used. To make the calculator accessible as a real service, we wrap it in a [Spin](https://spinframework.dev) HTTP application.
@@ -289,105 +388,6 @@ A few things stand out about this workflow:
 **Cold start is fast.** Because WebAssembly modules are pre-compiled and sandboxed, Spin can instantiate the component per-request with very low overhead — no JVM startup, no Python interpreter initialization on the hot path.
 
 The full source for `thecalculatorspin` is in the [scientificcalculator repository](https://github.com/uhansen/scientificcalculator).
-
----
-
-## An Interactive CLI with `thecalculatorcli`
-
-The same composed binary that powers the HTTP service can be used from the command line — no HTTP server, no deployment, just `wasmtime run`. To make this ergonomic, `thecalculatorcli` is a WASI CLI Rust component that wraps `the-calculator` in an interactive REPL.
-
-### What is WASI CLI?
-
-[WASI CLI](https://github.com/WebAssembly/wasi-cli) is a WASI P2 proposal that standardises command-line program behaviour for WASM components: stdin/stdout/stderr streams, environment variables, process exit, and terminal detection. A component that exports `wasi:cli/run` is a proper WASI command — any compliant runtime (Wasmtime ≥ 18) can run it with `wasmtime run`.
-
-When you target `wasm32-wasip2` in Rust and write a `main()` function, the Rust runtime automatically exports `wasi:cli/run`, so the component is a first-class WASI command with no extra boilerplate.
-
-### The implementation
-
-`thecalculatorcli` is a small Rust binary that imports `the-calculator` via WIT and reads from stdin in a loop:
-
-```rust
-wit_bindgen::generate!({
-    path: "wit",
-    world: "calculator-cli",
-    generate_all,
-});
-
-use buildbyhansen::the_calculator::calculator::calculate;
-
-fn main() {
-    println!("Scientific Calculator — type 'q' to quit");
-    println!("Supported: add  subtract  multiply  divide  sin  cos  tan  arctan");
-    println!("           mod  div  e  ln  sum  avg");
-    println!();
-
-    loop {
-        print!("calculate: ");
-        use std::io::Write;
-        std::io::stdout().flush().unwrap();
-
-        let mut line = String::new();
-        match std::io::stdin().read_line(&mut line) {
-            Ok(0) | Err(_) => break,
-            Ok(_) => {}
-        }
-
-        let input = line.trim();
-        if input == "q" || input == "quit" { break; }
-        if input.is_empty() { continue; }
-
-        println!("{}", calculate(input));
-    }
-}
-```
-
-The WIT world mirrors the Spin app's: it imports `buildbyhansen:the-calculator/calculator@0.1.0`. At composition time, `wac plug` embeds the full 32 MB composed calculator binary inside the CLI shell — the same mechanism as `thecalculatorspin`.
-
-### Build and run
-
-```sh
-cd applications/thecalculatorcli
-cargo build --target wasm32-wasip2 --release
-wac plug \
-  --plug ../../components/the-calculator/the-calculator.wasm \
-  target/wasm32-wasip2/release/thecalculatorcli.wasm \
-  -o thecalculatorcli-composed.wasm
-```
-
-```sh
-wasmtime run applications/thecalculatorcli/thecalculatorcli-composed.wasm
-```
-
-Example session:
-
-```
-Scientific Calculator — type 'q' to quit
-Supported: add  subtract  multiply  divide  sin  cos  tan  arctan
-           mod  div  e  ln  sum  avg
-
-calculate: add(2,2)
-4
-calculate: multiply(6,7)
-42
-calculate: sin(30)
-0.49999999999999994
-calculate: sum(1,2,3,4,5)
-15
-calculate: q
-```
-
-You can verify what the component actually exports:
-
-```sh
-wasm-tools component wit thecalculatorcli/thecalculatorcli-composed.wasm | grep -E "export|run"
-# → export wasi:cli/run@0.2.6
-```
-
-This confirms it is a proper WASI P2 command. The Rust `main()` function maps directly to `wasi:cli/run` — no extra configuration needed.
-
-### Why this matters
-
-The same WIT interface and composition tool (`wac plug`) used to build the HTTP service powers the CLI REPL. `the-calculator` is not a library — it is a self-contained binary component with a stable, versioned interface. Consuming it from a CLI or an HTTP handler requires nothing more than declaring the import in WIT and composing at build time. The Component Model's interface contract is the only shared dependency.
 
 ---
 
