@@ -209,7 +209,7 @@ fn main() {
 }
 ```
 
-The WIT world mirrors the Spin app's: it imports `buildbyhansen:the-calculator/calculator@0.1.0`. At composition time, `wac plug` embeds the full 32 MB composed calculator binary inside the CLI shell — the same mechanism as `thecalculatorspin`.
+The WIT imports `buildbyhansen:the-calculator/calculator@0.1.0`. At composition time, `wac plug` embeds the full 32 MB composed calculator binary inside the CLI shell — the same mechanism as `thecalculatorspin`.
 
 ### Build and run
 
@@ -261,11 +261,11 @@ The same WIT interface and composition tool (`wac plug`) that builds the CLI REP
 
 ## Deploying as a Spin HTTP Application
 
-Building a composed WASM binary is satisfying, but invoking it with `wasmtime run --invoke` from the command line is not how most software gets used. To make the calculator accessible as a real service, we wrap it in a [Spin](https://spinframework.dev) HTTP application.
+Building a composed WASM binary is satisfying, but invoking it with `wasmtime run --invoke` from the command line is not how most software gets used. To make the calculator accessible as a real serverless service, we wrap it in a [Spin](https://spinframework.dev) HTTP application.
 
 ### What is Spin?
 
-Spin is an open-source framework from Fermyon for building serverless-style applications on top of WebAssembly. You write a handler function; Spin provides the HTTP server, the WASI host implementation, and the runtime plumbing. The key property for this project: **Spin components are WASM components**. A Spin HTTP app is just a WASM component that exports `wasi:http/handler`. That makes it a first-class participant in the Component Model.
+Spin is an open-source framework from Fermyon (now aquired by Akamai) for building serverless-style applications on top of WebAssembly. You write a handler function; Spin provides the HTTP server, the WASI host implementation, and the runtime plumbing. The key property for this project: **Spin components are WASM components**. A Spin HTTP app is just a WASM component that exports `wasi:http/handler`. That makes it a first-class participant in the Component Model.
 
 ### The architecture
 
