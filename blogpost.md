@@ -162,7 +162,7 @@ The promise of WebAssembly was always portability. The Component Model extends t
 
 ## An Interactive CLI with `thecalculatorcli`
 
-The same composed binary that powers the HTTP service can be used from the command line — no HTTP server, no deployment, just `wasmtime run`. To make this ergonomic, `thecalculatorcli` is a WASI CLI Rust component that wraps `the-calculator` in an interactive REPL.
+Once `the-calculator` is composed into a single WASM binary it can be used directly from the command line — no HTTP server, no deployment, just `wasmtime run`. To make this ergonomic, `thecalculatorcli` is a WASI CLI Rust component that wraps `the-calculator` in an interactive REPL.
 
 ### What is WASI CLI?
 
@@ -255,7 +255,7 @@ This confirms it is a proper WASI P2 command. The Rust `main()` function maps di
 
 ### Why this matters
 
-The same WIT interface and composition tool (`wac plug`) used to build the HTTP service powers the CLI REPL. `the-calculator` is not a library — it is a self-contained binary component with a stable, versioned interface. Consuming it from a CLI or an HTTP handler requires nothing more than declaring the import in WIT and composing at build time. The Component Model's interface contract is the only shared dependency.
+The same WIT interface and composition tool (`wac plug`) that builds the CLI REPL is used again for the Spin HTTP service in the next section. `the-calculator` is not a library — it is a self-contained binary component with a stable, versioned interface. Consuming it from a CLI or an HTTP handler requires nothing more than declaring the import in WIT and composing at build time. The Component Model's interface contract is the only shared dependency.
 
 ---
 
