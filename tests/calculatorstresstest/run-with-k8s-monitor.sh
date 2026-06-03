@@ -108,18 +108,23 @@ k8s_monitor() {
             || echo "not found")
         printf "${YELLOW}│${NC}  SpinApp replicas  : %-37s${YELLOW}│${NC}\n" "${SPINAPP_INFO}"
 
-        # Pods matching the SpinApp label
+        # Pods matching the SpinApp label — use standard columns, simpler and more reliable
         POD_LINES=$(kubectl get pods -n "${NAMESPACE}" \
             -l "core.spinkube.dev/app=${SPINAPP_NAME}" \
-            --no-headers \
-            -o custom-columns='NAME:.metadata.name,READY:.status.containerStatuses[0].ready,STATUS:.status.phase,RESTARTS:.status.containerStatuses[0].restartCount' \
-            2>/dev/null || echo "  (no pods / label not matched)")
+            --no-headers 2>/dev/null || echo "")
 
-        POD_COUNT=$(echo "${POD_LINES}" | grep -vc "no pods" 2>/dev/null || echo 0)
+        if [ -z "${POD_LINES}" ]; then
+            # Try broad pod list if label yields nothing (label may differ per SpinKube version)
+            POD_LINES=$(kubectl get pods -n "${NAMESPACE}" \
+                --no-headers 2>/dev/null \
+                | grep "^${SPINAPP_NAME}" || echo "  (none)")
+        fi
+
+        POD_COUNT=$(echo "${POD_LINES}" | grep -v '^\s*$' | grep -vc "(none)" 2>/dev/null || echo 0)
 
         printf "${YELLOW}│${NC}  Running pods      : %-37s${YELLOW}│${NC}\n" "${POD_COUNT}"
         while IFS= read -r line; do
-            printf "${YELLOW}│${NC}    %-55s${YELLOW}│${NC}\n" "${line}"
+            [ -n "${line}" ] && printf "${YELLOW}│${NC}    %-55s${YELLOW}│${NC}\n" "${line}"
         done <<< "${POD_LINES}"
 
         # KEDA HTTPScaledObject (if present)
@@ -144,18 +149,38 @@ trap 'kill "${MONITOR_PID}" 2>/dev/null; echo ""' EXIT INT TERM
 # ---------------------------------------------------------------------------
 # Run the stress test (foreground — output goes directly to terminal)
 # ---------------------------------------------------------------------------
+echo -e "${GREEN}▶  Building stress test (silent)...${NC}"
+
+cd "${SCRIPT_DIR}"
+
+# Pre-build silently so MSBuild output doesn't mix with stress test output.
+# Only rebuilds if source has changed (incremental).
+"${DOTNET}" build calculatorstresstest.csproj -c Release --nologo -v quiet 2>&1 \
+    | grep -E "error|Error|FAILED" || true
+
 echo -e "${GREEN}▶  Starting stress test...${NC}"
 echo ""
 
-cd "${SCRIPT_DIR}"
-"${DOTNET}" run \
-    --project calculatorstresstest.csproj \
-    -c Release \
-    -- \
-    --url          "${URL}" \
-    --concurrency  "${CONCURRENCY}" \
-    --duration     "${DURATION}" \
-    --ramp         "${RAMP}"
+# Run the pre-built binary directly (no MSBuild output at runtime)
+BINARY="${SCRIPT_DIR}/bin/Release/net10.0/calculaterstresstest"
+if [ -x "${BINARY}" ]; then
+    "${BINARY}" \
+        --url          "${URL}" \
+        --concurrency  "${CONCURRENCY}" \
+        --duration     "${DURATION}" \
+        --ramp         "${RAMP}"
+else
+    # Fallback: dotnet run with --no-build (binary was just built above)
+    "${DOTNET}" run \
+        --project calculatorstresstest.csproj \
+        -c Release \
+        --no-build \
+        -- \
+        --url          "${URL}" \
+        --concurrency  "${CONCURRENCY}" \
+        --duration     "${DURATION}" \
+        --ramp         "${RAMP}"
+fi
 
 echo ""
 echo -e "${GREEN}✔  Stress test complete.${NC}"
