@@ -622,3 +622,136 @@ The workflow caches four artifact stores to minimise per-run build time:
 | pip (componentize-py) | requirements hash |
 
 On a warm cache run (no dependency changes) the full build-compose-push cycle completes in approximately 8–12 minutes — dominated by the Rust compilation of the WASM targets.
+
+## Using `the-calculator` as a Plugin
+
+The CLI and Spin approaches both embed `the-calculator` at *build time* via `wac plug` — the composed binary is sealed before it runs. A different pattern treats the WASM component as a *runtime plugin*: the host application loads whatever path the user supplies at startup, wires up WASI, and calls into the component through a stable WIT interface. The component can be swapped without recompiling the host.
+
+This is the classic plugin architecture — think scripting language extensions or VSCode language servers — but realised entirely through the WASM Component Model. The host and plugin share nothing except a versioned WIT contract.
+
+### The Rust host — `calculatorrustapp`
+
+`calculatorrustapp` is a native Rust binary that embeds `wasmtime` as a library. It accepts `--plugin <path>` at startup and runs a REPL identical to `thecalculatorcli`, but the component is loaded from disk at runtime rather than composed in at build time.
+
+```rust
+wasmtime::component::bindgen!({
+    path: "wit",
+    world: "the-calculator",
+});
+
+fn main() -> Result<()> {
+    let cli = Cli::parse();         // --plugin path/to/the-calculator.wasm
+
+    let mut config = Config::new();
+    config.wasm_component_model(true);
+    let engine = Engine::new(&config)?;
+
+    let component = Component::from_file(&engine, &cli.plugin)?;  // runtime load
+
+    let mut linker: Linker<HostState> = Linker::new(&engine);
+    wasmtime_wasi::p2::add_to_linker_sync(&mut linker)?;          // full WASI P2
+
+    let mut store = Store::new(&engine, HostState { wasi, table });
+    let calc = TheCalculator::instantiate(&mut store, &component, &linker)?;
+    let calculator = calc.buildbyhansen_the_calculator_calculator();
+
+    loop {
+        // ... read line, call calculator.call_calculate(&mut store, input)
+    }
+}
+```
+
+`bindgen!` generates a typed Rust wrapper from the WIT file at *compile time*, so every call to `call_calculate` is type-checked against the interface — even though the concrete WASM binary is not known until runtime.
+
+#### Build
+
+```sh
+cd applications/calculatorrustapp
+cargo build --release        # native binary, not WASM
+```
+
+#### Run
+
+```sh
+./target/release/calculatorrustapp \
+  --plugin ../../components/the-calculator/the-calculator.wasm
+```
+
+```
+Scientific Calculator — wasmtime plugin host
+Plugin: ../../components/the-calculator/the-calculator.wasm
+Type 'q' to quit.
+Supported syntax: func(arg1, arg2, ...)
+Functions:  add  subtract  multiply  divide  sin  cos  tan  arctan  mod  div  e  ln  sum  avg
+
+calculate: add(3,4)
+7
+calculate: sum(1,2,3,4,5)
+15
+calculate: divide(22,7)
+3.142857142857143
+calculate: q
+```
+
+Because the host implements the full `WasiView` trait — providing `WasiCtx` and `ResourceTable` — it supports every component in the polyglot composition, including the .NET logarithmic calculator and the componentize-py statistics calculator.
+
+### The Python host — `calculatorpythonapp`
+
+The same plugin pattern works in Python using the `wasmtime` pip package. The Python host exposes an identical `--plugin` / REPL interface.
+
+```python
+config = Config()
+config.wasm_component_model = True
+engine = Engine(config)
+
+comp = component.Component.from_file(engine, args.plugin)   # runtime load
+linker = component.Linker(engine)
+linker.add_wasip2()
+store = Store(engine, WasiConfig())
+instance = linker.instantiate(store, comp)
+
+iface_idx = comp.get_export_index("buildbyhansen:the-calculator/calculator@0.1.0")
+calc_idx  = instance.get_export_index(store, "calculate", iface_idx)
+calculate = instance.get_func(store, calc_idx)
+
+result = calculate(store, expr)
+calculate.post_return(store)   # required for string-returning functions
+```
+
+#### Run
+
+```sh
+cd applications/calculatorpythonapp
+pip install -r requirements.txt
+python main.py --plugin ../../components/the-calculator/the-calculator.wasm
+```
+
+#### Polyglot limitation in the Python host
+
+The Python wasmtime package is a thin C-extension wrapper around the same `libwasmtime` used by the Rust host, but it does not fully implement the WASI CLI host callbacks (`wasi:cli/stdout` etc.) for background threads. The .NET logarithmic component and the componentize-py statistics component both spawn worker threads that call back into the store via those interfaces — and the C API panics because the Python-side store context is not thread-safe in the same way.
+
+The Python host isolates each calculation in a child subprocess. If the subprocess aborts (SIGABRT), the parent catches it and returns a descriptive error rather than crashing:
+
+```
+calculate: ln(2.71828)
+Error: 'ln' uses a polyglot component (.NET or Python runtime) that requires
+WASI CLI stdio from a background thread — not supported by the Python
+wasmtime C API. Use calculatorrustapp for full support.
+```
+
+Functions backed by pure Rust or JavaScript components (`add`, `subtract`, `multiply`, `divide`, `sin`, `cos`, `tan`, `arctan`, `mod`, `div`) work correctly in both hosts.
+
+### Plugin vs. composition — when to use each
+
+| | Composed (wac plug) | Plugin (wasmtime host) |
+|---|---|---|
+| Component loaded | Build time | Runtime — swappable |
+| Distribution | Single WASM binary | Host binary + separate `.wasm` |
+| Language of host | WASM component | Any language with wasmtime binding |
+| WASI support | Provided by outer runtime (wasmtime run, Spin) | Host must implement WasiView |
+| Use case | Serverless, edge, portable CLI | Desktop apps, IDEs, extensible tools |
+
+Both approaches use the same `the-calculator.wasm` and the same WIT interface. The Component Model's value is that neither the components nor their polyglot origins change — only how they are packaged and delivered.
+
+---
+

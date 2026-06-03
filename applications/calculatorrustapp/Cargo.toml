@@ -1,0 +1,16 @@
+[package]
+name = "calculatorrustapp"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "calculatorrustapp"
+path = "src/main.rs"
+
+[dependencies]
+wasmtime = { version = "45", features = ["component-model"] }
+wasmtime-wasi = "45"
+clap = { version = "4", features = ["derive"] }
+anyhow = "1"
+
+[workspace]
