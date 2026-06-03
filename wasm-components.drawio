@@ -1,1 +1,96 @@
-<mxfile host="0rm5d11dkrg51l36vdh8ttts0cv44jbj1k0pg23fukr78ebpnecl" modified="2026-06-03T07:46:47.090Z" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Code/1.122.0 Chrome/142.0.7444.265 Electron/39.8.8 Safari/537.36" etag="JU2fyiHUB0rreCOGtnh2" version="12.2.4" pages="1"><diagram name="WASM Components" id="0">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</diagram></mxfile>
+<mxfile host="Copilot">
+  <diagram name="WASM Components">
+    <mxGraphModel dx="1422" dy="762" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="title" value="Scientific Calculator — WASM Component Architecture" style="text;html=1;fontSize=18;fontStyle=1;align=center;fontColor=#1a237e;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1060" height="36" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="lbl-apps" value="«subsystem»&#xa;Applications" style="text;html=1;fontSize=11;fontStyle=3;fontColor=#555555;align=left;" vertex="1" parent="1">
+          <mxGeometry x="50" y="76" width="160" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="zone-apps" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f0fe;strokeColor=#3c4eb5;strokeDasharray=6 4;strokeWidth=1;arcSize=3;" vertex="1" parent="1">
+          <mxGeometry x="50" y="100" width="1050" height="130" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="cli" value="&lt;font style=&quot;font-size: 9px; color: #555;&quot;&gt;&amp;laquo;component&amp;raquo;&lt;/font&gt;&lt;br&gt;&lt;b&gt;thecalculatorcli&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;CLI Application&lt;/font&gt;" style="shape=component;align=center;spacingLeft=20;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#3c4eb5;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="130" y="125" width="220" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="spin" value="&lt;font style=&quot;font-size: 9px; color: #555;&quot;&gt;&amp;laquo;component&amp;raquo;&lt;/font&gt;&lt;br&gt;&lt;b&gt;thecalculatorspin&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;HTTP API · Spin Framework&lt;/font&gt;" style="shape=component;align=center;spacingLeft=20;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#3c4eb5;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="680" y="125" width="260" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="lbl-composite" value="«subsystem»&#xa;Composite Component" style="text;html=1;fontSize=11;fontStyle=3;fontColor=#555555;align=left;" vertex="1" parent="1">
+          <mxGeometry x="50" y="266" width="200" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="zone-composite" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3e5f5;strokeColor=#7b1fa2;strokeDasharray=6 4;strokeWidth=1;arcSize=3;" vertex="1" parent="1">
+          <mxGeometry x="50" y="290" width="1050" height="150" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="calc" value="&lt;font style=&quot;font-size: 9px; color: #555;&quot;&gt;&amp;laquo;component&amp;raquo;&lt;/font&gt;&lt;br&gt;&lt;b&gt;the-calculator&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;calculate(expr: string) : string&lt;/font&gt;" style="shape=component;align=center;spacingLeft=20;whiteSpace=wrap;html=1;fillColor=#e1bee7;strokeColor=#7b1fa2;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="370" y="320" width="320" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="lbl-prim" value="«subsystem»&#xa;Primitive Components" style="text;html=1;fontSize=11;fontStyle=3;fontColor=#555555;align=left;" vertex="1" parent="1">
+          <mxGeometry x="50" y="472" width="200" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="zone-prim" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#388e3c;strokeDasharray=6 4;strokeWidth=1;arcSize=3;" vertex="1" parent="1">
+          <mxGeometry x="50" y="496" width="1050" height="150" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="arith" value="&lt;font style=&quot;font-size: 9px; color: #555;&quot;&gt;&amp;laquo;component&amp;raquo;&lt;/font&gt;&lt;br&gt;&lt;b&gt;arithmetic-calculator&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;add · subtract · multiply · divide&lt;/font&gt;" style="shape=component;align=center;spacingLeft=20;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#388e3c;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="68" y="526" width="180" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="trig" value="&lt;font style=&quot;font-size: 9px; color: #555;&quot;&gt;&amp;laquo;component&amp;raquo;&lt;/font&gt;&lt;br&gt;&lt;b&gt;trigonometric-calculator&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;sin · cos · tan · arctan&lt;/font&gt;" style="shape=component;align=center;spacingLeft=20;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#388e3c;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="278" y="526" width="200" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="moddiv" value="&lt;font style=&quot;font-size: 9px; color: #555;&quot;&gt;&amp;laquo;component&amp;raquo;&lt;/font&gt;&lt;br&gt;&lt;b&gt;moddiv-calculator&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;mod · div&lt;/font&gt;" style="shape=component;align=center;spacingLeft=20;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#388e3c;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="498" y="526" width="180" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="log" value="&lt;font style=&quot;font-size: 9px; color: #555;&quot;&gt;&amp;laquo;component&amp;raquo;&lt;/font&gt;&lt;br&gt;&lt;b&gt;logaritmic-calculator&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;e · ln&lt;/font&gt;" style="shape=component;align=center;spacingLeft=20;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#388e3c;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="698" y="526" width="180" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="stats" value="&lt;font style=&quot;font-size: 9px; color: #555;&quot;&gt;&amp;laquo;component&amp;raquo;&lt;/font&gt;&lt;br&gt;&lt;b&gt;statistics-calculator&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 9px;&quot;&gt;sum · avg&lt;/font&gt;" style="shape=component;align=center;spacingLeft=20;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#388e3c;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="898" y="526" width="180" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e-cli-calc" value="&lt;font style=&quot;font-size:9px&quot;&gt;&amp;laquo;use&amp;raquo;&lt;/font&gt;" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=open;endFill=0;dashed=1;strokeColor=#3c4eb5;strokeWidth=1.5;fontSize=9;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;" edge="1" source="cli" target="calc" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e-spin-calc" value="&lt;font style=&quot;font-size:9px&quot;&gt;&amp;laquo;use&amp;raquo;&lt;/font&gt;" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=open;endFill=0;dashed=1;strokeColor=#3c4eb5;strokeWidth=1.5;fontSize=9;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;" edge="1" source="spin" target="calc" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e-calc-arith" value="&lt;font style=&quot;font-size:9px&quot;&gt;&amp;laquo;use&amp;raquo;&lt;/font&gt;" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=open;endFill=0;dashed=1;strokeColor=#7b1fa2;strokeWidth=1.5;fontSize=9;" edge="1" source="calc" target="arith" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e-calc-trig" value="" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=open;endFill=0;dashed=1;strokeColor=#7b1fa2;strokeWidth=1.5;" edge="1" source="calc" target="trig" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e-calc-moddiv" value="" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=open;endFill=0;dashed=1;strokeColor=#7b1fa2;strokeWidth=1.5;" edge="1" source="calc" target="moddiv" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e-calc-log" value="" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=open;endFill=0;dashed=1;strokeColor=#7b1fa2;strokeWidth=1.5;" edge="1" source="calc" target="log" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e-calc-stats" value="" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=open;endFill=0;dashed=1;strokeColor=#7b1fa2;strokeWidth=1.5;" edge="1" source="calc" target="stats" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
