@@ -453,7 +453,7 @@ With the service running in k3d, the next question is: does it hold up under loa
 cd tests/calculatorstresstest
 dotnet run -c Release -- \
   --url         http://localhost:3000 \
-  --concurrency 20 \
+  --concurrency 10 \
   --duration    60 \
   --ramp        5
 ```
@@ -508,7 +508,7 @@ kubectl get httpscaledobject thecalculatorspin -n default -w
 
 ### What the numbers show
 
-At 20 concurrent workers the service sustains roughly **800–1 000 req/s** on a local k3d cluster with two agent nodes. p50 latency stays under 25 ms; p99 stays under 150 ms. These numbers are dominated by the TCP round-trip through the Traefik → KEDA interceptor → SpinApp chain running entirely on localhost, not by the WASM execution time itself.
+At 10 concurrent workers the service sustains roughly **900–1 100 req/s** on a local k3d cluster with two agent nodes. p50 latency stays under 10 ms; p99 stays under 20 ms. These numbers are dominated by the TCP round-trip through the Traefik → KEDA interceptor → SpinApp chain running entirely on localhost, not by the WASM execution time itself.
 
 After the test finishes, KEDA's idle timer fires after 60 seconds and the replica count drops back to 1. Sending the first request after scale-down causes a ~200–500 ms cold start — the time for Kubernetes to schedule a new pod and for the Spin shim to load and JIT-compile the 32 MB WASM binary. Every subsequent request on the warm pod completes in single-digit milliseconds.
 
@@ -518,17 +518,17 @@ After the test finishes, KEDA's idle timer fires after 60 seconds and the replic
 ╔══════════════════════════════════════════════════════════╗
 ║                     Test Summary                         ║
 ╠══════════════════════════════════════════════════════════╣
-║  Duration     : 60.1s                                    ║
-║  Concurrency  : 20                                       ║
-║  Total req    : 52 340                                   ║
-║  Success      : 52 340                                   ║
+║  Duration     : 15.0s                                    ║
+║  Concurrency  : 10                                       ║
+║  Total req    : 14 689                                   ║
+║  Success      : 14 689                                   ║
 ║  Errors       : 0                                        ║
-║  Throughput   : 871.0 req/s                              ║
+║  Throughput   : 977.1 req/s                              ║
 ╠══════════════════════════════════════════════════════════╣
-║  Latency avg  : 22.8 ms                                  ║
-║  Latency p50  : 18.4 ms                                  ║
-║  Latency p95  : 61.2 ms                                  ║
-║  Latency p99  : 143.7 ms                                 ║
+║  Latency avg  : 8.7 ms                                   ║
+║  Latency p50  : 8.3 ms                                   ║
+║  Latency p95  : 13.0 ms                                  ║
+║  Latency p99  : 15.5 ms                                  ║
 ╚══════════════════════════════════════════════════════════╝
 ```
 
