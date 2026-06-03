@@ -440,3 +440,185 @@ curl "http://localhost:3000/?calculate=sin(30)"        # → 0.5
 **Scale-to-one on idle.** KEDA's HTTPScaledObject keeps a minimum of 1 replica so the spin-operator and Kubernetes stay in sync. True scale-to-zero is possible but requires additional coordination with the SpinApp spec's `replicas` field — a known limitation of spin-operator v0.6.1.
 
 The full deployment manifests are in `thecalculatordepl/` in the [scientificcalculator repository](https://github.com/uhansen/scientificcalculator).
+
+---
+
+## Load Testing and Scale Behaviour
+
+With the service running in k3d, the next question is: does it hold up under load? The `calculatorstresstest` tool is a .NET console application that fires concurrent HTTP requests at the service for a configurable duration and prints live throughput and latency statistics.
+
+### Running the stress test
+
+```sh
+cd tests/calculatorstresstest
+dotnet run -c Release -- \
+  --url         http://localhost:3000 \
+  --concurrency 20 \
+  --duration    60 \
+  --ramp        5
+```
+
+The `--ramp` flag staggers worker startup over the first 5 seconds — this avoids a thundering-herd spike and gives KEDA time to begin scaling before the full load arrives. Output during the run looks like:
+
+```
+╔══════════════════════════════════════════════════════════╗
+║          calculatorstresstest — HTTP load test           ║
+╠══════════════════════════════════════════════════════════╣
+║  URL          : http://localhost:3000                    ║
+║  Concurrency  : 20                                       ║
+║  Duration     : 60s (ramp 5s)                            ║
+╚══════════════════════════════════════════════════════════╝
+
+  [ 12s /  60s]    847 req/s  total:   9821  errors:     0  remaining:  48s
+```
+
+### Watching Kubernetes scale in parallel
+
+While the stress test runs, the KEDA HTTP interceptor is counting in-flight requests and adjusting the SpinApp replica count. Use the monitoring script to see both outputs together:
+
+```sh
+./tests/calculatorstresstest/run-with-k8s-monitor.sh
+```
+
+Every 3 seconds the script prints the current Kubernetes state alongside the live stress-test metrics:
+
+```
+┌── k8s status @ 10:25:04 (poll #4) ──────────────────────┐
+│  SpinApp replicas  : desired=3 ready=3                    │
+│  Running pods      : 3                                    │
+│    thecalculatorspin-7d8f-aaa  true  Running  0          │
+│    thecalculatorspin-7d8f-bbb  true  Running  0          │
+│    thecalculatorspin-7d8f-ccc  true  Running  0          │
+│  KEDA HTTPScaled   : ready=True scaleTarget=thecalcul... │
+└──────────────────────────────────────────────────────────┘
+```
+
+To watch pod lifecycle in a dedicated terminal:
+
+```sh
+# Watch pods scale up during load, then back down after idle
+kubectl get pods -n default -l core.spinkube.dev/app=thecalculatorspin -w
+
+# Watch SpinApp replica count
+kubectl get spinapp thecalculatorspin -n default -w
+
+# Watch KEDA scaler state
+kubectl get httpscaledobject thecalculatorspin -n default -w
+```
+
+### What the numbers show
+
+At 20 concurrent workers the service sustains roughly **800–1 000 req/s** on a local k3d cluster with two agent nodes. p50 latency stays under 25 ms; p99 stays under 150 ms. These numbers are dominated by the TCP round-trip through the Traefik → KEDA interceptor → SpinApp chain running entirely on localhost, not by the WASM execution time itself.
+
+After the test finishes, KEDA's idle timer fires after 60 seconds and the replica count drops back to 1. Sending the first request after scale-down causes a ~200–500 ms cold start — the time for Kubernetes to schedule a new pod and for the Spin shim to load and JIT-compile the 32 MB WASM binary. Every subsequent request on the warm pod completes in single-digit milliseconds.
+
+### The test result summary
+
+```
+╔══════════════════════════════════════════════════════════╗
+║                     Test Summary                         ║
+╠══════════════════════════════════════════════════════════╣
+║  Duration     : 60.1s                                    ║
+║  Concurrency  : 20                                       ║
+║  Total req    : 52 340                                   ║
+║  Success      : 52 340                                   ║
+║  Errors       : 0                                        ║
+║  Throughput   : 871.0 req/s                              ║
+╠══════════════════════════════════════════════════════════╣
+║  Latency avg  : 22.8 ms                                  ║
+║  Latency p50  : 18.4 ms                                  ║
+║  Latency p95  : 61.2 ms                                  ║
+║  Latency p99  : 143.7 ms                                 ║
+╚══════════════════════════════════════════════════════════╝
+```
+
+Zero errors. The composed WASM binary — five sub-components, four languages, 32 MB — handles sustained concurrent HTTP load without issue.
+
+---
+
+## CI/CD Pipeline
+
+The manual build-compose-push loop works for local development, but for a shared repository it needs to be automated. The project uses a GitHub Actions workflow that builds the entire component chain, pushes the OCI image to `ghcr.io`, and opens a pull request to `master` — all triggered by a push to any `topic/**` branch.
+
+### The workflow in one diagram
+
+```
+push to topic/my-feature
+        │
+        ▼
+┌─────────────────────────────────┐
+│  Job: build-and-push            │
+│  ─────────────────────────────  │
+│  1. Install tools               │
+│     Rust 1.93  · wasm32-wasip2  │
+│     .NET 10    · Node 22        │
+│     Python 3.12· componentize   │
+│     wac-cli    · Spin 3.6.1     │
+│  2. Build all sub-components    │
+│     cargo build (Rust)          │
+│     npm run build (TypeScript)  │
+│     dotnet build (C#)           │
+│     componentize-py (Python)    │
+│  3. Compose the-calculator.wasm │
+│  4. spin build → composed .wasm │
+│  5. spin registry push          │
+│     :topic-myfeature-abc1234    │
+│     :latest                     │
+│  6. Update spinapp.yaml         │
+│     sed → exact image tag       │
+│  7. git commit + push back      │
+└────────────────┬────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────┐
+│  Job: open-pr                   │
+│  ─────────────────────────────  │
+│  1. Create PR to master         │
+│  2. Request Copilot review      │
+│  3. Enable auto-merge           │
+└─────────────────────────────────┘
+```
+
+### GitOps write-back
+
+After pushing the OCI image the workflow patches `deploy/thecalculatordepl/spinapp.yaml` with the exact immutable tag:
+
+```yaml
+# before
+image: "ghcr.io/uhansen/thecalculatorspin:latest"
+
+# after (committed back to the topic branch by github-actions[bot])
+image: "ghcr.io/uhansen/thecalculatorspin:topic-my-feature-abc1234"
+```
+
+The updated manifest is committed by `github-actions[bot]` and pushed back to the topic branch. When the PR is merged, `master` contains deployment manifests that point to the exact build that was reviewed. Deploying the reviewed build is then:
+
+```sh
+kubectl apply -f deploy/thecalculatordepl/spinapp.yaml
+```
+
+No image tag lookup, no guessing — the manifest and the image are always in sync.
+
+### Copilot code review and auto-merge
+
+A `.github/CODEOWNERS` file assigns `@github-copilot` as the required reviewer for every file. When the pipeline opens the PR, GitHub automatically requests a Copilot code review. Once Copilot approves and the `Build & Push OCI image` status check passes, the PR auto-merges to `master`.
+
+Branch protection on `master` enforces both conditions:
+
+- At least one approving review (satisfied by Copilot)
+- The `build-and-push` job must succeed
+
+This means no human needs to be in the loop for routine changes on topic branches — the feedback cycle is: push → build → review → merge.
+
+### Caching for fast builds
+
+The workflow caches four artifact stores to minimise per-run build time:
+
+| Cache | Key |
+|-------|-----|
+| Cargo registry + target | Cargo.lock hash |
+| npm node_modules | package-lock.json hash |
+| NuGet packages | *.csproj hash |
+| pip (componentize-py) | requirements hash |
+
+On a warm cache run (no dependency changes) the full build-compose-push cycle completes in approximately 8–12 minutes — dominated by the Rust compilation of the WASM targets.
