@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/home/uhansen/source/projects/scientificcalculater/calculaterstresstest/calculaterstresstest.csproj",
-      "projectName": "calculaterstresstest",
-      "projectPath": "/home/uhansen/source/projects/scientificcalculater/calculaterstresstest/calculaterstresstest.csproj",
+      "projectUniqueName": "/home/uhansen/source/projects/scientificcalculator/tests/calculatorstresstest/calculatorstresstest.csproj",
+      "projectName": "calculatorstresstest",
+      "projectPath": "/home/uhansen/source/projects/scientificcalculator/tests/calculatorstresstest/calculatorstresstest.csproj",
       "packagesPath": "/home/uhansen/.nuget/packages/",
-      "outputPath": "/home/uhansen/source/projects/scientificcalculater/calculaterstresstest/obj/",
+      "outputPath": "/home/uhansen/source/projects/scientificcalculator/tests/calculatorstresstest/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "/home/uhansen/.nuget/NuGet/NuGet.Config"

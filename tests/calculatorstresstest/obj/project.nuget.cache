@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "9TMIRNOJIrM=",
+  "dgSpecHash": "Y0/8pmq0oek=",
   "success": true,
-  "projectFilePath": "/home/uhansen/source/projects/scientificcalculater/calculaterstresstest/calculaterstresstest.csproj",
+  "projectFilePath": "/home/uhansen/source/projects/scientificcalculator/tests/calculatorstresstest/calculatorstresstest.csproj",
   "expectedPackageFiles": [],
   "logs": []
 }
