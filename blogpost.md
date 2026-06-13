@@ -275,18 +275,18 @@ Spin is an open-source framework from Fermyon (now aquired by Akamai) for buildi
 HTTP request
      │
      ▼
-┌─────────────────────────────┐
-│  thecalculatorspin          │  ← Spin 3.6+ HTTP app (Rust, wasm32-wasip2)
-│  exports wasi:http/handler  │
+┌──────────────────────────────────────┐
+│  thecalculatorspin                   │  ← Spin 3.6+ HTTP app (Rust, wasm)
+│  exports wasi:http/handler           │
 │  imports buildbyhansen:the-calculator│
-└────────────┬────────────────┘
+└────────────┬─────────────────────────┘
              │  (composed in by wac plug)
              ▼
-┌─────────────────────────────┐
-│  the-calculator.wasm        │  ← composed component (5 sub-components)
+┌────────────────────────────────────────┐
+│  the-calculator.wasm                   │  ← composed component (5 sub-components)
 │  arithmetic · trig · moddiv-calculator │
-│  logarithmic · statistics   │
-└─────────────────────────────┘
+│  logarithmic · statistics              │
+└────────────────────────────────────────┘
 ```
 
 The Spin app imports the `calculate(string) → string` interface from `the-calculator`. At build time, `wac plug` fills that import by embedding the composed calculator binary directly into the Spin component. The resulting binary is fully self-contained: Spin only needs to provide the WASI host APIs.
