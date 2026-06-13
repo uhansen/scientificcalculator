@@ -1,5 +1,7 @@
 # Building Polyglot Applications with WebAssembly Components
 
+![WASM components diagram](wasm-components.drawio.svg)
+
 ## What is WebAssembly?
 
 WebAssembly (WASM) started life as a compilation target for the browser. The idea was simple: take performance-critical code written in C, C++, or Rust and run it at near-native speed inside a web page, without plugins and without trusting arbitrary native binaries. The first version shipped in all major browsers in 2017.
