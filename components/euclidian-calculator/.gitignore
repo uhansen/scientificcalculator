@@ -1,0 +1,3 @@
+node_modules/
+*.wasm
+moddiv-calculator.js

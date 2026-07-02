@@ -97,7 +97,7 @@ Consider a system with five sub-components — each written in a different langu
 ```
 arithmetic-calculator (Rust)       ─┐
 trigonometric-calculator (Rust)    ─┤
-moddiv-calculator (TypeScript)                ─┼──► the-calculator (Rust shell)
+euclidian-calculator (TypeScript)                ─┼──► the-calculator (Rust shell)
 logaritmic-calculator (C#)         ─┤
 statistics-calculator (Python)     ─┘
 ```
@@ -108,7 +108,7 @@ The shell declares its imports in WIT:
 world the-calculator {
     import buildbyhansen:arithmetic-calculator/arithmetic@0.1.0;
     import buildbyhansen:trigonometric-calculator/trigonometric@0.1.0;
-    import buildbyhansen:moddiv-calculator/moddiv@0.1.0;
+    import buildbyhansen:euclidian-calculator/moddiv@0.1.0;
     import buildbyhansen:logaritmic-calculator/logaritmic@0.1.0;
     import buildbyhansen:statistics-calculator/statistics@0.1.0;
 
@@ -122,7 +122,7 @@ The `wac plug` tool resolves each import by matching it against the exports of t
 wac plug \
   --plug arithmetic_calculator.wasm \
   --plug trigonometric_calculator.wasm \
-  --plug moddiv-calculator.wasm \
+  --plug euclidian-calculator.wasm \
   --plug logaritmic-calculator.wasm \
   --plug statistics-calculator.wasm \
   the_calculator.wasm \
@@ -282,7 +282,7 @@ HTTP request
              ▼
 ┌─────────────────────────────┐
 │  the-calculator.wasm        │  ← composed component (5 sub-components)
-│  arithmetic · trig · moddiv-calculator │
+│  arithmetic · trig · euclidian-calculator │
 │  logarithmic · statistics   │
 └─────────────────────────────┘
 ```
