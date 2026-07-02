@@ -74,7 +74,7 @@ jobs:
         with:
           node-version: "22"
           cache: "npm"
-          cache-dependency-path: components/moddiv-calculator/package-lock.json
+          cache-dependency-path: components/euclidian-calculator/package-lock.json
 
       # ── Python ────────────────────────────────────────────────────────────
       - name: Install Python 3.12
@@ -122,8 +122,8 @@ jobs:
       - name: Build Rust components
         run: cargo build --target wasm32-wasip2 --release
 
-      - name: Build TypeScript moddiv-calculator
-        working-directory: components/moddiv-calculator
+      - name: Build TypeScript euclidian-calculator
+        working-directory: components/euclidian-calculator
         run: npm ci && npm run build
 
       - name: Build C# logaritmic-calculator
@@ -144,7 +144,7 @@ jobs:
           wac plug \
             --plug target/wasm32-wasip2/release/arithmetic_calculator.wasm \
             --plug target/wasm32-wasip2/release/trigonometric_calculator.wasm \
-            --plug components/moddiv-calculator/moddiv-calculator.wasm \
+            --plug components/euclidian-calculator/euclidian-calculator.wasm \
             --plug components/logaritmic-calculator/bin/Release/net10.0/wasi-wasm/publish/logaritmic-calculator.wasm \
             --plug components/statistics-calculator/statistics-calculator.wasm \
             target/wasm32-wasip2/release/the_calculator.wasm \
