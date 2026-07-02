@@ -158,11 +158,22 @@ jobs:
       # ── Push OCI image ─────────────────────────────────────────────────────
       - name: Login to ghcr.io
         working-directory: applications/thecalculatorspin
+        env:
+          GHCR_USERNAME: ${{ github.repository_owner }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | spin registry login \
-            --username "${{ github.actor }}" \
-            --password-stdin \
-            ghcr.io
+          if [ -n "${GHCR_TOKEN}" ]; then
+            echo "${GHCR_TOKEN}" | spin registry login \
+              --username "${GHCR_USERNAME}" \
+              --password-stdin \
+              ghcr.io
+          else
+            echo "${GITHUB_TOKEN}" | spin registry login \
+              --username "${GHCR_USERNAME}" \
+              --password-stdin \
+              ghcr.io
+          fi
 
       - name: Push OCI image
         working-directory: applications/thecalculatorspin

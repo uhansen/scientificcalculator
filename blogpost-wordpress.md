@@ -1,6 +1,20 @@
 # Building Polyglot Applications with WebAssembly Components
 
+## Background
+
 ![WASM components diagram](wasm-components.drawio.svg)
+
+## Tools prerequisites
+
+- [Rust toolchain](https://www.rust-lang.org/tools/install) with the `wasm32-wasip2` target
+- [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html) and `cargo install` access for building and installing WASM tooling
+- [.NET SDK 10](https://dotnet.microsoft.com/download/dotnet/10.0) for the C# calculator component
+- [Node.js 22](https://nodejs.org/) and [npm](https://www.npmjs.com/get-npm) for the TypeScript component
+- [Python 3.12](https://www.python.org/downloads/) and [`componentize-py`](https://github.com/bytecodealliance/componentize-py) for the Python component
+- [`wac-cli`](https://github.com/bytecodealliance/wac) for composing the WebAssembly components
+- [`spin`](https://developer.fermyon.com/spin/install) and the Spin registry tooling for building and publishing the app
+- [`spinkube`](https://spinkube.dev/docs/install/) for running Spin applications on Kubernetes
+- [`k3d`](https://k3d.io/stable/#installation) and [`kubectl`](https://kubernetes.io/docs/tasks/tools/) for creating a local Kubernetes cluster and deploying the application
 
 ## What is WebAssembly?
 
