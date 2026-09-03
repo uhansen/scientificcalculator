@@ -459,6 +459,97 @@ The full deployment manifests are in `thecalculatordepl/` in the [scientificcalc
 
 ---
 
+## Cloud Deployments
+
+The local k3d setup proved that the Spin app, SpinKube, and KEDA HTTP autoscaling work well together. The next step was to package that same deployment model for real cloud environments. The repository now includes three cloud-specific deploy folders that all follow the same pattern:
+
+1. Push `thecalculatorspin` to `ghcr.io`
+2. Provision a Kubernetes cluster for the target cloud
+3. Install Traefik, cert-manager, Runtime Class Manager, `containerd-shim-spin`, spin-operator, KEDA, and the KEDA HTTP Add-on
+4. Deploy the `SpinApp`, route ingress through the KEDA interceptor, and verify the HTTP API
+
+The common installation steps are shared through `deploy/lib/spinkube-common.sh`, while each provider-specific folder handles its own cluster provisioning and load balancer integration.
+
+### Hetzner Cloud
+
+Hetzner Cloud does not offer a managed Kubernetes service like EKS or AKS, so the deployment uses a self-managed `k3s` cluster running on Hetzner VMs. The script creates a private network, firewall, one control-plane node, and a configurable number of worker nodes, then installs `k3s` with the external cloud provider enabled.
+
+After the cluster is online, the deploy flow installs the Hetzner Cloud Controller Manager so a Kubernetes `Service` of type `LoadBalancer` can provision a native Hetzner load balancer for Traefik. That keeps the application path consistent with the local setup:
+
+```
+internet
+  → Hetzner Load Balancer
+    → Traefik
+      → KEDA HTTP interceptor proxy
+        → thecalculatorspin
+```
+
+The entry point is:
+
+```sh
+bash deploy/thecalculatordepl-hetzner/deploy.sh
+```
+
+The teardown script deletes the VMs, firewall, and network again:
+
+```sh
+bash deploy/thecalculatordepl-hetzner/teardown.sh
+```
+
+### AWS EKS
+
+For AWS, the repository uses `eksctl` to provision an Amazon EKS cluster with a managed node group. Once kubeconfig is updated, the same SpinKube and KEDA stack is installed on top. Traefik is exposed through a Kubernetes `LoadBalancer` service, which lets EKS allocate the cloud-side load balancer and public address.
+
+The deploy folder contains both the shell script and the `eksctl` cluster manifest:
+
+```sh
+bash deploy/thecalculatordepl-aws/deploy.sh
+```
+
+That script renders `eksctl-cluster.yaml`, creates the cluster if needed, installs the WASM runtime stack, and finally prints the load balancer hostname so the app can be called with:
+
+```sh
+curl -H 'Host: thecalculatorspin.local' \
+  "http://<eks-load-balancer>/?calculate=add(2,3)"
+```
+
+Cleanup is equally direct:
+
+```sh
+bash deploy/thecalculatordepl-aws/teardown.sh
+```
+
+### Azure AKS
+
+The Azure variant uses the `az` CLI to create a resource group and an AKS cluster, then refreshes kubeconfig and installs the same Traefik + SpinKube + KEDA stack. AKS already integrates with the Azure load balancer for `Service` resources of type `LoadBalancer`, so Traefik gets a cloud-managed public endpoint without any extra ingress controller glue.
+
+The full deployment is:
+
+```sh
+bash deploy/thecalculatordepl-azure/deploy.sh
+```
+
+And verification follows the same request shape as the other clouds:
+
+```sh
+curl -H 'Host: thecalculatorspin.local' \
+  "http://<aks-load-balancer>/?calculate=multiply(6,7)"
+```
+
+Teardown removes the entire resource group:
+
+```sh
+bash deploy/thecalculatordepl-azure/teardown.sh
+```
+
+### Why this matters
+
+The interesting part is not that Kubernetes can run an HTTP service — that is routine. The interesting part is that the deployment unit is still the exact same Spin OCI artifact containing the `.wasm` application. The cloud-specific logic is almost entirely about provisioning the cluster and integrating the load balancer; the SpinKube and KEDA layers are effectively portable across providers.
+
+That is a strong result for the WASM Component Model story. The calculator is written across multiple languages, composed into one WASM application, packaged once, and then deployed with the same runtime model on a laptop cluster, on Hetzner VMs, on Amazon EKS, and on Azure AKS.
+
+---
+
 ## Load Testing and Scale Behaviour
 
 With the service running in k3d, the next question is: does it hold up under load? The `calculatorstresstest` tool is a .NET console application that fires concurrent HTTP requests at the service for a configurable duration and prints live throughput and latency statistics.
@@ -770,4 +861,3 @@ Functions backed by pure Rust or JavaScript components (`add`, `subtract`, `mult
 Both approaches use the same `the-calculator.wasm` and the same WIT interface. The Component Model's value is that neither the components nor their polyglot origins change — only how they are packaged and delivered.
 
 ---
-
