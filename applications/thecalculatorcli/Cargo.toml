@@ -8,6 +8,6 @@ name = "thecalculatorcli"
 path = "src/main.rs"
 
 [dependencies]
-wit-bindgen = "0.51"
+wit-bindgen = "0.61.1"
 
 [workspace]

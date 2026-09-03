@@ -61,8 +61,8 @@ Exports a `statistics` interface with:
 - `sum(numbers: list<f64>) -> f64` — sum of a list of numbers
 - `avg(numbers: list<f64>) -> f64` — arithmetic mean (returns 0.0 for empty list)
 
-### `thecalculatorspin` (Rust, Spin 3.6+ HTTP app)
-An HTTP application built with [Spin](https://spinframework.dev) that wraps `the-calculator` and exposes it over HTTP. Send a GET request with an `?calculate=` query parameter; the result is returned as plain text.
+### `thecalculatorspin` (Rust, Spin 4.1 async HTTP app)
+An HTTP application built with [Spin](https://spinframework.dev) that wraps `the-calculator` and exposes it over HTTP. It now uses the async `spin-sdk` 6 `#[http_service]` model. Send a GET request with an `?calculate=` query parameter; the result is returned as plain text.
 
 ### `thecalculatorcli` (Rust, WASI CLI)
 An interactive command-line REPL that imports `the-calculator` via WIT and is composed with it using `wac`. Run with `wasmtime run` for an interactive calculator prompt.
@@ -95,14 +95,14 @@ Requires [.NET 10 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0).
 ### `statistics-calculator` (Python)
 Requires Python 3.10+ and `componentize-py`:
 ```sh
-pip install componentize-py
+pip install componentize-py==0.25.0
 ```
 
 ### `thecalculatorspin` (Spin HTTP app)
-Requires [Spin 3.6+](https://spinframework.dev/install) in addition to the Rust toolchain and `wac-cli` listed above:
+Requires [Spin 4.1+](https://spinframework.dev/install) in addition to the Rust toolchain and `wac-cli` listed above:
 ```sh
-# Install Spin
-curl -fsSL https://spinframework.dev/downloads/install.sh | bash
+# Install Spin 4.1
+curl -fsSL https://spinframework.dev/downloads/install.sh | bash -s -- -v v4.1.0
 ```
 
 ## Build
@@ -315,13 +315,13 @@ Type any expression supported by `the-calculator`. Enter `q` or `quit` to exit.
 
 ## Run with Spin (`thecalculatorspin`)
 
-`thecalculatorspin` is a Spin v4 HTTP application that exposes `the-calculator` as an HTTP endpoint. Send a GET request with a `?calculate=` query parameter; the result is returned as plain text.
+`thecalculatorspin` is a Spin v4.1 HTTP application that exposes `the-calculator` as an HTTP endpoint. It uses the async `spin-sdk` 6 `#[http_service]` API while still targeting `wasm32-wasip2`, because no stable `wasm32-wasip3` Rust target exists yet.
 
 ### Prerequisites
 
 ```sh
-# Install Spin v4
-curl -fsSL https://spinframework.dev/downloads/install.sh | bash
+# Install Spin v4.1.0
+curl -fsSL https://spinframework.dev/downloads/install.sh | bash -s -- -v v4.1.0
 # or manually: https://github.com/spinframework/spin/releases
 
 # Install wac (WASM composition tool)
@@ -406,7 +406,7 @@ KEDA HTTP Add-on watches incoming request volume and scales the deployment betwe
 | [k3d](https://k3d.io) | ≥ 5.0 | `brew install k3d` / [k3d.io](https://k3d.io/#installation) |
 | [kubectl](https://kubernetes.io/docs/tasks/tools/) | any | `brew install kubectl` |
 | [Helm](https://helm.sh) | ≥ 3.0 | `brew install helm` |
-| [Spin CLI](https://spinframework.dev/install) | ≥ 3.6 | `curl -fsSL https://spinframework.dev/downloads/install.sh \| bash` |
+| [Spin CLI](https://spinframework.dev/install) | 4.1.x | `curl -fsSL https://spinframework.dev/downloads/install.sh \| bash -s -- -v v4.1.0` |
 | Docker (Docker Desktop / Rancher Desktop / OrbStack) | running | required by k3d |
 
 ### Deploy
@@ -418,16 +418,17 @@ bash deploy/thecalculatordepl/deploy.sh
 
 The script performs these steps in order:
 
-1. **Push image** — authenticates to `ghcr.io` via GitHub CLI token, runs `spin registry push ghcr.io/uhansen/thecalculatorspin:latest`, and creates an `imagePullSecret` in the cluster so nodes can pull the private package
-2. **Create cluster** — k3d cluster using `ghcr.io/spinframework/containerd-shim-spin/k3d:v0.24.0` (Spin shim pre-installed, no extra operator needed)
-3. **cert-manager** v1.16.3 — required by spin-operator webhooks
-4. **spin-operator** v0.6.1 — SpinApp CRD controller
-5. **RuntimeClass + ShimExecutor** — wire the containerd shim into Kubernetes scheduling
-6. **KEDA** 2.19.0 — core autoscaler
-7. **KEDA HTTP Add-on** 0.14.0 — `HTTPScaledObject` CRD + interceptor proxy
-8. **SpinApp + Ingress** — deploys the app and routes Traefik through the KEDA interceptor
-9. **HTTPScaledObject** — configures autoscaling (min=1, max=5, scaledownPeriod=60s)
-10. **Patch Traefik** — enables ExternalName service backends (required for the interceptor route)
+1. **Push image** — authenticates to `ghcr.io` via `GHCR_TOKEN`, `CR_PAT`, `GITHUB_TOKEN`, or the GitHub CLI token, runs `spin registry push ghcr.io/uhansen/thecalculatorspin:latest`, and creates an `imagePullSecret` in the cluster so nodes can pull the private package
+2. **Create cluster** — stock k3d cluster using `rancher/k3s:v1.35.2-k3s1`
+3. **Patch Traefik** — creates a `HelmChartConfig` so Traefik accepts `ExternalName` backends for the KEDA interceptor proxy
+4. **cert-manager** v1.21.1 — required by spin-operator webhooks
+5. **Runtime Class Manager** 0.2.0 + shim `v0.25.1` — installs `containerd-shim-spin` onto the k3d nodes and creates `wasmtime-spin-v2`
+6. **spin-operator** v0.6.1 — SpinApp CRD controller
+7. **ShimExecutor** — tells spin-operator to schedule apps via the RuntimeClass created by Runtime Class Manager
+8. **KEDA** 2.20.2 — core autoscaler
+9. **KEDA HTTP Add-on** 0.15.0 — `HTTPScaledObject` CRD + interceptor proxy
+10. **SpinApp + Ingress** — deploys the app and routes Traefik through the KEDA interceptor
+11. **HTTPScaledObject** — configures autoscaling (min=1, max=5, scaledownPeriod=60s)
 
 ### Test
 
@@ -463,16 +464,19 @@ bash deploy/thecalculatordepl/teardown.sh
 |---|---|
 | `deploy/thecalculatordepl/deploy.sh` | Full end-to-end deploy script |
 | `deploy/thecalculatordepl/teardown.sh` | Delete the cluster |
-| `deploy/thecalculatordepl/k3d-config.yaml` | k3d cluster spec (shim node image, port 3000→80) |
+| `deploy/thecalculatordepl/k3d-config.yaml` | k3d cluster spec (stock k3s nodes, port 3000→80) |
+| `deploy/thecalculatordepl/traefik-helmchartconfig.yaml` | Enables Traefik `ExternalName` backends for the KEDA interceptor |
 | `deploy/thecalculatordepl/spinapp.yaml` | SpinApp CR + ExternalName proxy Service + Traefik Ingress |
 | `deploy/thecalculatordepl/httpscaledobject.yaml` | KEDA HTTPScaledObject (min=1 → max=5) |
 
 ### Notes
 
-- **ghcr.io image:** `ghcr.io/uhansen/thecalculatorspin:latest` — stored permanently in GitHub Container Registry (no expiry). The package is private; `deploy.sh` automatically creates an `imagePullSecret` (`ghcr-pull-secret`) in the cluster using the GitHub token. Requires a GitHub token with `write:packages` scope to push (set `GITHUB_TOKEN` env var, or ensure `gh auth token` has the scope — run `gh auth refresh -s write:packages` if needed).
+- **ghcr.io image:** `ghcr.io/uhansen/thecalculatorspin:latest` — stored permanently in GitHub Container Registry (no expiry). The package is private; `deploy.sh` automatically creates an `imagePullSecret` (`ghcr-pull-secret`) in the cluster using `GHCR_TOKEN`, `CR_PAT`, `GITHUB_TOKEN`, or the GitHub CLI token. The token must include `write:packages` to push.
+- **Pull credentials:** when `~/.docker/config.json` already contains working GHCR credentials, `deploy.sh` reuses that file for the Kubernetes pull secret. This is more reliable than the GitHub CLI token for private package pulls.
 - **Re-deploying:** Re-run `deploy.sh` to push a new build and refresh the imagePullSecret, then `kubectl rollout restart deployment/thecalculatorspin`.
 - **min=1 (not 0):** The spin-operator reconciles `replicas: 1` from the SpinApp spec. Setting `min: 1` in the `HTTPScaledObject` keeps both controllers in agreement. True scale-to-zero would require removing the `replicas` field from the SpinApp and is not yet supported cleanly by spin-operator v0.6.1.
-- The cluster uses Spin shim **v0.24.0** (Spin 3.6.3 / wasmtime 42). The app was built with spin-sdk 5.2.0 (Spin 3.6.1 series) — compatible.
+- The upstream shim-specific k3d node image is no longer published. This repo now follows the supported SpinKube installation model: standard k3d nodes plus Runtime Class Manager installing shim **v0.25.1** (Spin 4.0.1) onto labeled nodes.
+- The repo now targets Spin CLI **4.1.0**, Spin shim **v0.25.1** (Spin 4.0.1), `spin-sdk` **6.0.0**, `wac-cli` **0.10.1**, and `componentize-py` **0.25.0**. The calculator components still target `wasm32-wasip2`; true `wasm32-wasip3` builds remain blocked on upstream toolchain support.
 
 ## WASM Binary Sizes
 

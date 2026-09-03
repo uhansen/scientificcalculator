@@ -14,8 +14,8 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE: ghcr.io/uhansen/thecalculatorspin
-  SPIN_VERSION: "3.6.1"
-  WAC_VERSION: "0.10.0"
+  SPIN_VERSION: "4.1.0"
+  WAC_VERSION: "0.10.1"
 
 jobs:
   build-and-push:
@@ -86,10 +86,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: pip-componentize-py-0.23.0
+          key: pip-componentize-py-0.25.0
 
       - name: Install componentize-py
-        run: pip install componentize-py==0.23.0
+        run: pip install componentize-py==0.25.0
 
       # ── wac-cli ───────────────────────────────────────────────────────────
       - name: Cache wac-cli binary
@@ -187,29 +187,6 @@ jobs:
           spin registry push "${{ env.IMAGE }}:latest"
           echo "Pushed: ${{ env.IMAGE }}:latest"
 
-      # ── Update deployment manifests (GitOps write-back) ────────────────────
-      - name: Update spinapp.yaml with new image tag
-        run: |
-          TAG="${{ steps.meta.outputs.image_tag }}"
-          sed -i "s|image: \"${{ env.IMAGE }}:.*\"|image: \"${{ env.IMAGE }}:${TAG}\"|" \
-            deploy/thecalculatordepl/spinapp.yaml
-          echo "spinapp.yaml updated to use image tag: ${TAG}"
-          grep 'image:' deploy/thecalculatordepl/spinapp.yaml
-
-      - name: Commit and push updated spinapp.yaml
-        run: |
-          TAG="${{ steps.meta.outputs.image_tag }}"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add deploy/thecalculatordepl/spinapp.yaml
-          if git diff --staged --quiet; then
-            echo "No changes to spinapp.yaml — skipping commit"
-          else
-            git commit -m "ci: update spinapp.yaml image → ${{ env.IMAGE }}:${TAG}"
-            git push
-            echo "Committed and pushed spinapp.yaml update"
-          fi
-
   open-pr:
     name: Open PR → master
     needs: build-and-push
@@ -236,23 +213,59 @@ jobs:
           PR_BODY=$(printf '## Automated CI/CD PR\n\n**Branch**: `%s`\n**Image**: `ghcr.io/uhansen/thecalculatorspin:%s`\n**Commit**: %s\n\nAll WASM components built and OCI image pushed to ghcr.io.\n\n---\n' \
             "${BRANCH}" "${TAG}" "${GITHUB_SHA}")
 
+          run_pr_command() {
+            local output status
+            set +e
+            output="$("$@" 2>&1)"
+            status=$?
+            set -e
+            if [ "${status}" -eq 0 ]; then
+              printf '%s\n' "${output}"
+              return 0
+            fi
+            if printf '%s' "${output}" | grep -qiE 'resource not accessible by integration|not permitted to create or update pull requests'; then
+              printf '%s\n' "${output}"
+              return 2
+            fi
+            printf '%s\n' "${output}" >&2
+            return "${status}"
+          }
+
           if [ -z "${EXISTING}" ]; then
-            gh pr create \
+            set +e
+            run_pr_command gh pr create \
               --base master \
               --head "${BRANCH}" \
               --title "ci: ${BRANCH} -> master [${TAG}]" \
               --body "${PR_BODY}*This PR was created automatically by the CI/CD pipeline.*"
+            PR_STATUS=$?
+            set -e
+            if [ "${PR_STATUS}" -eq 2 ]; then
+              echo "Skipping PR automation: GitHub Actions token cannot create PRs in this repository."
+              exit 0
+            elif [ "${PR_STATUS}" -ne 0 ]; then
+              exit "${PR_STATUS}"
+            fi
 
             # Re-fetch PR number after creation
             EXISTING=$(gh pr list \
               --head "${BRANCH}" \
               --base master \
               --json number \
-              --jq '.[0].number')
+              --jq '.[0].number' 2>/dev/null || echo "")
           else
             # Update existing PR body with latest image tag
-            gh pr edit "${EXISTING}" \
+            set +e
+            run_pr_command gh pr edit "${EXISTING}" \
               --body "${PR_BODY}*This PR was updated automatically by the CI/CD pipeline.*"
+            PR_STATUS=$?
+            set -e
+            if [ "${PR_STATUS}" -eq 2 ]; then
+              echo "Skipping PR automation: GitHub Actions token cannot update PRs in this repository."
+              exit 0
+            elif [ "${PR_STATUS}" -ne 0 ]; then
+              exit "${PR_STATUS}"
+            fi
           fi
 
           # Request Copilot code review (requires Copilot code review enabled in repo settings)

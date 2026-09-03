@@ -1,6 +1,6 @@
 use anyhow::Result;
-use spin_sdk::http::{IntoResponse, Method, Request, Response};
-use spin_sdk::http_component;
+use spin_sdk::http::{IntoResponse, Request, Response};
+use spin_sdk::http_service;
 
 wit_bindgen::generate!({
     path: "wit",
@@ -10,16 +10,16 @@ wit_bindgen::generate!({
 
 /// HTTP handler: GET /?calculate=<expression>
 /// Delegates to the-calculator composed component and returns the result.
-#[http_component]
-fn handle(req: Request) -> Result<impl IntoResponse> {
-    if req.method() != &Method::Get {
-        return Ok(Response::new(405, "Only GET is supported\n"));
+#[http_service]
+async fn handle(req: Request) -> Result<impl IntoResponse> {
+    if req.method() != "GET" {
+        return Ok(text_response(405, "Only GET is supported\n"));
     }
 
     let expr = get_expr(&req);
 
     if expr.is_empty() {
-        return Ok(Response::new(
+        return Ok(text_response(
             200,
             "Missing expression.\n\
              Usage: GET /?calculate=<expression>\n\
@@ -33,12 +33,11 @@ fn handle(req: Request) -> Result<impl IntoResponse> {
     }
 
     let result = buildbyhansen::the_calculator::calculator::calculate(&expr);
-    Ok(Response::new(200, result))
+    Ok(text_response(200, result))
 }
 
 fn get_expr(req: &Request) -> String {
-    let uri = req.uri();
-    let query = uri.split('?').nth(1).unwrap_or("");
+    let query = req.uri().query().unwrap_or("");
     for pair in query.split('&') {
         if let Some(value) = pair.strip_prefix("calculate=") {
             return urlencoded_decode(value);
@@ -67,3 +66,10 @@ fn urlencoded_decode(s: &str) -> String {
     result
 }
 
+fn text_response(status: u16, body: impl Into<String>) -> Response<String> {
+    Response::builder()
+        .status(status)
+        .header("content-type", "text/plain; charset=utf-8")
+        .body(body.into())
+        .expect("building text response")
+}
