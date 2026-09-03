@@ -14,8 +14,8 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE: ghcr.io/uhansen/thecalculatorspin
-  SPIN_VERSION: "3.6.1"
-  WAC_VERSION: "0.10.0"
+  SPIN_VERSION: "4.1.0"
+  WAC_VERSION: "0.10.1"
 
 jobs:
   build-and-push:
@@ -86,10 +86,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: pip-componentize-py-0.23.0
+          key: pip-componentize-py-0.25.0
 
       - name: Install componentize-py
-        run: pip install componentize-py==0.23.0
+        run: pip install componentize-py==0.25.0
 
       # ── wac-cli ───────────────────────────────────────────────────────────
       - name: Cache wac-cli binary

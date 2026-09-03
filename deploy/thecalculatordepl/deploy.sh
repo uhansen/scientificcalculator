@@ -10,10 +10,10 @@ CLUSTER_NAME="uha-cluster"
 GHCR_USER="uhansen"
 IMAGE="ghcr.io/${GHCR_USER}/thecalculatorspin:latest"
 
-CERT_MANAGER_VERSION="v1.16.3"
+CERT_MANAGER_VERSION="v1.21.1"
 SPIN_OPERATOR_VERSION="v0.6.1"
-KEDA_VERSION="2.19.0"
-KEDA_HTTP_ADDON_VERSION="0.14.0"
+KEDA_VERSION="2.20.2"
+KEDA_HTTP_ADDON_VERSION="0.15.0"
 SCALEDOWN_PERIOD=60   # seconds idle before scaling down (min=1)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -35,17 +35,20 @@ wait_rollout() {
 # ---------------------------------------------------------------------------
 info "Step 1: Pushing WASM image to ghcr.io (${IMAGE})"
 
-# Use GITHUB_TOKEN env var if set, otherwise fall back to gh CLI token.
+# Prefer an explicit package-write token if one is available.
+# Accepted env vars: GHCR_TOKEN, CR_PAT, or GITHUB_TOKEN.
+# Otherwise fall back to the GitHub CLI token.
 # The token must have the 'write:packages' scope.
-if [[ -z "${GITHUB_TOKEN:-}" ]]; then
+REGISTRY_TOKEN="${GHCR_TOKEN:-${CR_PAT:-${GITHUB_TOKEN:-}}}"
+if [[ -z "${REGISTRY_TOKEN}" ]]; then
   if ! gh auth status --hostname github.com &>/dev/null; then
     echo "  ✗ Not logged in to GitHub. Run: gh auth login"
     exit 1
   fi
-  GITHUB_TOKEN="$(gh auth token)"
+  REGISTRY_TOKEN="$(gh auth token)"
 fi
 
-echo "${GITHUB_TOKEN}" | spin registry login \
+echo "${REGISTRY_TOKEN}" | spin registry login \
   --username "${GHCR_USER}" \
   --password-stdin \
   ghcr.io
@@ -60,15 +63,15 @@ ok "Image pushed: ${IMAGE}"
 kubectl create secret docker-registry ghcr-pull-secret \
   --docker-server=ghcr.io \
   --docker-username="${GHCR_USER}" \
-  --docker-password="${GITHUB_TOKEN}" \
+  --docker-password="${REGISTRY_TOKEN}" \
   --namespace=default \
   --dry-run=client -o yaml | kubectl apply -f -
 ok "imagePullSecret ghcr-pull-secret created/updated"
 
 # ---------------------------------------------------------------------------
-# Step 2 – k3d cluster (shim v0.24.0 pre-installed in the node image)
+# Step 2 – k3d cluster (shim v0.25.1 pre-installed in the node image)
 # ---------------------------------------------------------------------------
-info "Step 2: k3d cluster (image: spinframework/containerd-shim-spin/k3d:v0.24.0)"
+info "Step 2: k3d cluster (image: spinframework/containerd-shim-spin/k3d:v0.25.1)"
 if k3d cluster list 2>/dev/null | grep -q "${CLUSTER_NAME}"; then
   ok "Cluster ${CLUSTER_NAME} already exists"
 else

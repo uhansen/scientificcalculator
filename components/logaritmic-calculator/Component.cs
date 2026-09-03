@@ -1,6 +1,6 @@
-namespace LogaritmicCalculatorWorld.wit.exports.buildbyhansen.logaritmicCalculator.v0_1_0;
+namespace LogaritmicCalculatorWorld.wit.Exports.buildbyhansen.logaritmicCalculator.v0_1_0;
 
-public class LogaritmicImpl : ILogaritmic
+public class LogaritmicExportsImpl : ILogaritmicExports
 {
     public static double E()
     {
