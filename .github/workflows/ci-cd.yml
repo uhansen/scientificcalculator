@@ -223,7 +223,7 @@ jobs:
               printf '%s\n' "${output}"
               return 0
             fi
-            if printf '%s' "${output}" | grep -qiE 'resource not accessible by integration|not permitted to create or update pull requests'; then
+            if printf '%s' "${output}" | grep -qiE 'resource not accessible by integration|not permitted to create or update pull requests|not permitted to create or approve pull requests'; then
               printf '%s\n' "${output}"
               return 2
             fi
