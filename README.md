@@ -320,8 +320,8 @@ Type any expression supported by `the-calculator`. Enter `q` or `quit` to exit.
 ### Prerequisites
 
 ```sh
-# Install Spin v4
-curl -fsSL https://spinframework.dev/downloads/install.sh | bash
+# Install Spin v4.1.0
+curl -fsSL https://spinframework.dev/downloads/install.sh | bash -s -- -v v4.1.0
 # or manually: https://github.com/spinframework/spin/releases
 
 # Install wac (WASM composition tool)

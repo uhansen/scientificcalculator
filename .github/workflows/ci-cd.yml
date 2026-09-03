@@ -236,12 +236,39 @@ jobs:
           PR_BODY=$(printf '## Automated CI/CD PR\n\n**Branch**: `%s`\n**Image**: `ghcr.io/uhansen/thecalculatorspin:%s`\n**Commit**: %s\n\nAll WASM components built and OCI image pushed to ghcr.io.\n\n---\n' \
             "${BRANCH}" "${TAG}" "${GITHUB_SHA}")
 
+          run_pr_command() {
+            local output status
+            set +e
+            output="$("$@" 2>&1)"
+            status=$?
+            set -e
+            if [ "${status}" -eq 0 ]; then
+              printf '%s\n' "${output}"
+              return 0
+            fi
+            if printf '%s' "${output}" | grep -qiE 'resource not accessible by integration|not permitted to create or update pull requests'; then
+              printf '%s\n' "${output}"
+              return 2
+            fi
+            printf '%s\n' "${output}" >&2
+            return "${status}"
+          }
+
           if [ -z "${EXISTING}" ]; then
-            gh pr create \
+            set +e
+            run_pr_command gh pr create \
               --base master \
               --head "${BRANCH}" \
               --title "ci: ${BRANCH} -> master [${TAG}]" \
-              --body "${PR_BODY}*This PR was created automatically by the CI/CD pipeline.*" || true
+              --body "${PR_BODY}*This PR was created automatically by the CI/CD pipeline.*"
+            PR_STATUS=$?
+            set -e
+            if [ "${PR_STATUS}" -eq 2 ]; then
+              echo "Skipping PR automation: GitHub Actions token cannot create PRs in this repository."
+              exit 0
+            elif [ "${PR_STATUS}" -ne 0 ]; then
+              exit "${PR_STATUS}"
+            fi
 
             # Re-fetch PR number after creation
             EXISTING=$(gh pr list \
@@ -251,13 +278,17 @@ jobs:
               --jq '.[0].number' 2>/dev/null || echo "")
           else
             # Update existing PR body with latest image tag
-            gh pr edit "${EXISTING}" \
-              --body "${PR_BODY}*This PR was updated automatically by the CI/CD pipeline.*" || true
-          fi
-
-          if [ -z "${EXISTING}" ]; then
-            echo "Skipping PR automation: GitHub Actions token cannot create or update PRs in this repository."
-            exit 0
+            set +e
+            run_pr_command gh pr edit "${EXISTING}" \
+              --body "${PR_BODY}*This PR was updated automatically by the CI/CD pipeline.*"
+            PR_STATUS=$?
+            set -e
+            if [ "${PR_STATUS}" -eq 2 ]; then
+              echo "Skipping PR automation: GitHub Actions token cannot update PRs in this repository."
+              exit 0
+            elif [ "${PR_STATUS}" -ne 0 ]; then
+              exit "${PR_STATUS}"
+            fi
           fi
 
           # Request Copilot code review (requires Copilot code review enabled in repo settings)

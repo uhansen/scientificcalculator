@@ -3,7 +3,7 @@ kind: SpinApp
 metadata:
   name: thecalculatorspin
 spec:
-  image: "ghcr.io/uhansen/thecalculatorspin:topic-upgradep3-a1ba0b3"
+  image: "ghcr.io/uhansen/thecalculatorspin:latest"
   replicas: 1
   executor: containerd-shim-spin
   imagePullSecrets:
