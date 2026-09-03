@@ -241,18 +241,23 @@ jobs:
               --base master \
               --head "${BRANCH}" \
               --title "ci: ${BRANCH} -> master [${TAG}]" \
-              --body "${PR_BODY}*This PR was created automatically by the CI/CD pipeline.*"
+              --body "${PR_BODY}*This PR was created automatically by the CI/CD pipeline.*" || true
 
             # Re-fetch PR number after creation
             EXISTING=$(gh pr list \
               --head "${BRANCH}" \
               --base master \
               --json number \
-              --jq '.[0].number')
+              --jq '.[0].number' 2>/dev/null || echo "")
           else
             # Update existing PR body with latest image tag
             gh pr edit "${EXISTING}" \
-              --body "${PR_BODY}*This PR was updated automatically by the CI/CD pipeline.*"
+              --body "${PR_BODY}*This PR was updated automatically by the CI/CD pipeline.*" || true
+          fi
+
+          if [ -z "${EXISTING}" ]; then
+            echo "Skipping PR automation: GitHub Actions token cannot create or update PRs in this repository."
+            exit 0
           fi
 
           # Request Copilot code review (requires Copilot code review enabled in repo settings)
