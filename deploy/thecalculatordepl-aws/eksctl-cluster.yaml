@@ -1,0 +1,17 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: __CLUSTER_NAME__
+  region: __AWS_REGION__
+
+iam:
+  withOIDC: true
+
+managedNodeGroups:
+  - name: spinkube-workers
+    instanceType: __NODE_INSTANCE_TYPE__
+    desiredCapacity: __NODE_COUNT__
+    minSize: __NODE_COUNT__
+    maxSize: __NODE_COUNT__
+    privateNetworking: true

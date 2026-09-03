@@ -1,0 +1,15 @@
+additionalArguments:
+  - --providers.kubernetesingress.allowExternalNameServices=true
+  - --providers.kubernetescrd.allowExternalNameServices=true
+  - --ping=true
+  - --ping.entrypoint=web
+service:
+  type: LoadBalancer
+  annotations:
+    load-balancer.hetzner.cloud/name: "thecalculatorspin-traefik"
+    load-balancer.hetzner.cloud/location: "__HCLOUD_LOCATION__"
+    load-balancer.hetzner.cloud/use-private-ip: "true"
+    load-balancer.hetzner.cloud/ipv6-disabled: "true"
+    load-balancer.hetzner.cloud/health-check-protocol: "http"
+    load-balancer.hetzner.cloud/health-check-port: "80"
+    load-balancer.hetzner.cloud/health-check-http-path: "/ping"

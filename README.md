@@ -478,6 +478,158 @@ bash deploy/thecalculatordepl/teardown.sh
 - The upstream shim-specific k3d node image is no longer published. This repo now follows the supported SpinKube installation model: standard k3d nodes plus Runtime Class Manager installing shim **v0.25.1** (Spin 4.0.1) onto labeled nodes.
 - The repo now targets Spin CLI **4.1.0**, Spin shim **v0.25.1** (Spin 4.0.1), `spin-sdk` **6.0.0**, `wac-cli` **0.10.1**, and `componentize-py` **0.25.0**. The calculator components still target `wasm32-wasip2`; true `wasm32-wasip3` builds remain blocked on upstream toolchain support.
 
+## Deploy on Hetzner Cloud, AWS EKS, and Azure AKS
+
+The repo now includes three end-to-end cloud deployment variants for the same
+SpinKube + KEDA HTTP architecture used locally:
+
+- `deploy/thecalculatordepl-hetzner/` — self-managed `k3s` on Hetzner Cloud VMs
+- `deploy/thecalculatordepl-aws/` — Amazon EKS via `eksctl`
+- `deploy/thecalculatordepl-azure/` — Azure Kubernetes Service via `az aks`
+
+All three variants:
+
+- push the Spin app to `ghcr.io/uhansen/thecalculatorspin:latest`
+- install Traefik, cert-manager, Runtime Class Manager, `containerd-shim-spin`,
+  spin-operator, KEDA, and the KEDA HTTP Add-on
+- deploy the `SpinApp`, route ingress traffic through the KEDA interceptor, and
+  verify the API with:
+
+```sh
+curl -H 'Host: thecalculatorspin.local' "http://<load-balancer-address>/?calculate=add(2,3)"
+```
+
+### Shared prerequisites
+
+| Tool | Purpose |
+|---|---|
+| `kubectl` | Cluster access |
+| `helm` | Traefik, Runtime Class Manager, spin-operator, KEDA, Hetzner CCM |
+| `spin` | Push the WASM app to `ghcr.io` |
+| `gh` | Registry token fallback for `ghcr.io` |
+| `curl` | Verification |
+
+You also need a token that can push to GitHub Container Registry:
+
+- preferred: `GHCR_TOKEN`, `CR_PAT`, or `GITHUB_TOKEN`
+- fallback: an authenticated `gh auth login` session
+
+> [!WARNING]
+> These scripts create real cloud resources and can incur charges until you run
+> the corresponding `teardown.sh`.
+
+### Hetzner Cloud (`deploy/thecalculatordepl-hetzner/`)
+
+Prerequisites:
+
+- `hcloud`, `jq`, `ssh`, `scp`
+- `HCLOUD_TOKEN`
+- `HCLOUD_SSH_KEY` set to an SSH key name or ID already registered in your
+  Hetzner Cloud project
+
+What the script does:
+
+1. Creates or reuses a private network and firewall
+2. Creates one control-plane VM and `WORKER_COUNT` agent VMs
+3. Installs `k3s` with `--cloud-provider=external`
+4. Installs the Hetzner Cloud Controller Manager so `Service type=LoadBalancer`
+   provisions a Hetzner load balancer
+5. Installs the shared SpinKube + KEDA stack and deploys the app
+
+Run it:
+
+```sh
+bash deploy/thecalculatordepl-hetzner/deploy.sh
+```
+
+Tear it down:
+
+```sh
+bash deploy/thecalculatordepl-hetzner/teardown.sh
+```
+
+Useful overrides:
+
+- `CLUSTER_NAME`
+- `HCLOUD_LOCATION`
+- `HCLOUD_SERVER_TYPE`
+- `WORKER_COUNT`
+- `KUBECONFIG_PATH`
+
+### AWS EKS (`deploy/thecalculatordepl-aws/`)
+
+Prerequisites:
+
+- `aws`
+- `eksctl`
+- AWS credentials with permission to create EKS, EC2, IAM, and networking resources
+
+The script renders `eksctl-cluster.yaml`, creates a managed-node-group EKS
+cluster if needed, updates kubeconfig, then installs the shared stack.
+
+Run it:
+
+```sh
+bash deploy/thecalculatordepl-aws/deploy.sh
+```
+
+Tear it down:
+
+```sh
+bash deploy/thecalculatordepl-aws/teardown.sh
+```
+
+Useful overrides:
+
+- `AWS_REGION`
+- `CLUSTER_NAME`
+- `NODE_COUNT`
+- `NODE_INSTANCE_TYPE`
+
+### Azure AKS (`deploy/thecalculatordepl-azure/`)
+
+Prerequisites:
+
+- `az`
+- an authenticated `az login` session
+- permission to create resource groups, AKS clusters, and load balancers
+
+The script creates or reuses a resource group and AKS cluster, refreshes
+kubeconfig, and installs the shared stack.
+
+Run it:
+
+```sh
+bash deploy/thecalculatordepl-azure/deploy.sh
+```
+
+Tear it down:
+
+```sh
+bash deploy/thecalculatordepl-azure/teardown.sh
+```
+
+Useful overrides:
+
+- `AZ_LOCATION`
+- `AZ_RESOURCE_GROUP`
+- `CLUSTER_NAME`
+- `NODE_COUNT`
+- `NODE_VM_SIZE`
+
+### Shared implementation notes
+
+- The common cloud-agnostic installation logic lives in
+  `deploy/lib/spinkube-common.sh`.
+- The deploy scripts use Traefik as the ingress controller on all three clouds
+  and expose it with each cloud's native `Service type=LoadBalancer`
+  integration.
+- The app is reached through the KEDA HTTP interceptor using the synthetic host
+  `thecalculatorspin.local`; the scripts print the load balancer address to use
+  with the `Host` header.
+- As with the local k3d deploy, autoscaling is configured with `min: 1` because
+  spin-operator still reconciles `replicas: 1` from the `SpinApp`.
+
 ## WASM Binary Sizes
 
 | File | Size | Notes |

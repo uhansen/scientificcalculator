@@ -1,0 +1,7 @@
+additionalArguments:
+  - --providers.kubernetesingress.allowExternalNameServices=true
+  - --providers.kubernetescrd.allowExternalNameServices=true
+  - --ping=true
+  - --ping.entrypoint=web
+service:
+  type: LoadBalancer
