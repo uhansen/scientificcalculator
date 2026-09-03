@@ -4,7 +4,7 @@ metadata:
   name: uha-cluster
 servers: 1
 agents: 2
-image: ghcr.io/spinframework/containerd-shim-spin/k3d:v0.25.1
+image: rancher/k3s:v1.35.2-k3s1
 ports:
   - port: "3000:80"
     nodeFilters:
