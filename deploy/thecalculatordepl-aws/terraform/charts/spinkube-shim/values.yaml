@@ -1,0 +1,7 @@
+shim:
+  name: spin-v2
+  version: v0.25.1
+  runtimeClassName: wasmtime-spin-v2
+  runtimeHandler: spin-v2
+  nodeSelector:
+    kubernetes.io/os: linux

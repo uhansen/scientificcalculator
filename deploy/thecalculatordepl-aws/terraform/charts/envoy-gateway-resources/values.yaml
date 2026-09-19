@@ -1,0 +1,18 @@
+app:
+  name: thecalculatorspin
+  host: thecalculatorspin.local
+  namespace: default
+envoyGateway:
+  className: thecalculatorspin-envoy
+  gatewayName: thecalculatorspin-http
+  proxy:
+    name: thecalculatorspin-envoyproxy
+    namespace: default
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-type: external
+      service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+      service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+keda:
+  namespace: keda
+  interceptorServiceName: keda-add-ons-http-interceptor-proxy
+  interceptorServicePort: 8080

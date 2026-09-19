@@ -1,0 +1,6 @@
+apiVersion: v2
+name: spin-operator-crds
+description: Installs the Spin Operator CRDs required before the operator release.
+type: application
+version: 0.1.0
+appVersion: "v0.6.1"

@@ -1,0 +1,33 @@
+apiVersion: core.spinkube.dev/v1alpha1
+kind: SpinApp
+metadata:
+  name: {{ .Values.app.name }}
+  namespace: {{ .Values.app.namespace }}
+spec:
+  image: {{ .Values.app.image | quote }}
+  executor: {{ .Values.app.executor }}
+  enableAutoscaling: true
+  imagePullSecrets:
+    - name: {{ .Values.app.imagePullSecret }}
+---
+apiVersion: http.keda.sh/v1alpha1
+kind: HTTPScaledObject
+metadata:
+  name: {{ .Values.app.name }}
+  namespace: {{ .Values.app.namespace }}
+spec:
+  hosts:
+    - {{ .Values.app.host | quote }}
+  scalingMetric:
+    concurrency:
+      targetValue: {{ .Values.autoscaling.concurrency }}
+  scaleTargetRef:
+    name: {{ .Values.app.name }}
+    kind: Deployment
+    apiVersion: apps/v1
+    service: {{ .Values.app.name }}
+    port: 80
+  replicas:
+    min: {{ .Values.autoscaling.minReplicas }}
+    max: {{ .Values.autoscaling.maxReplicas }}
+  scaledownPeriod: {{ .Values.autoscaling.scaledownPeriod }}

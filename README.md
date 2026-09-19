@@ -638,6 +638,11 @@ Prerequisites:
 - `eksctl`
 - AWS credentials with permission to create EKS, EC2, IAM, and networking resources
 
+This directory now contains **two AWS deployment paths**:
+
+1. `deploy.sh` / `teardown.sh` — the existing `eksctl` + Traefik flow
+2. `terraform/` — a Terraform-managed EKS + Envoy Gateway + SpinKube flow
+
 The script renders `eksctl-cluster.yaml`, creates a managed-node-group EKS
 cluster if needed, updates kubeconfig, then installs the shared stack.
 
@@ -645,6 +650,20 @@ Run it:
 
 ```sh
 bash deploy/thecalculatordepl-aws/deploy.sh
+```
+
+Terraform alternative:
+
+```sh
+cd deploy/thecalculatordepl-aws/terraform/bootstrap
+terraform init
+terraform apply -var='state_bucket_name=<globally-unique-bucket>'
+
+cd ..
+cp backend.hcl.example backend.hcl
+cp terraform.tfvars.example terraform.tfvars
+terraform init -backend-config=backend.hcl
+terraform apply
 ```
 
 Tear it down:
@@ -659,6 +678,14 @@ Useful overrides:
 - `CLUSTER_NAME`
 - `NODE_COUNT`
 - `NODE_INSTANCE_TYPE`
+
+Terraform-specific notes:
+
+- uses **Envoy Gateway** instead of Traefik
+- installs AWS Load Balancer Controller, Runtime Class Manager, SpinKube, KEDA,
+  and the app through Terraform-managed Helm/Kubernetes resources
+- expects a private GHCR image pull token and stores that Kubernetes secret in
+  Terraform state, so use the provided encrypted S3 backend bootstrap
 
 ### Azure AKS (`deploy/thecalculatordepl-azure/`)
 

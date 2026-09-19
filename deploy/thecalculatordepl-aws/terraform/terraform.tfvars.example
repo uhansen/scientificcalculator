@@ -1,0 +1,26 @@
+aws_region                           = "eu-north-1"
+project                              = "scientificcalculator"
+environment                          = "dev"
+cluster_name                         = "thecalculatorspin-eks"
+kubernetes_version                   = "1.33"
+cluster_endpoint_public_access_cidrs = [
+  "203.0.113.10/32",
+]
+
+node_instance_types = ["m5.large"]
+node_desired_size   = 2
+node_min_size       = 2
+node_max_size       = 3
+node_disk_size      = 50
+node_capacity_type  = "ON_DEMAND"
+
+vpc_cidr = "10.42.0.0/16"
+
+app_host      = "thecalculatorspin.example.internal"
+ghcr_username = "uhansen"
+ghcr_token    = "replace-with-a-ghcr-token"
+image         = "ghcr.io/uhansen/thecalculatorspin:latest"
+
+tags = {
+  Owner = "platform-team"
+}

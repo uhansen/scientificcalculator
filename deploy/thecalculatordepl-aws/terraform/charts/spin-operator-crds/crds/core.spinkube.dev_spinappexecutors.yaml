@@ -1,0 +1,108 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.16.5
+  name: spinappexecutors.core.spinkube.dev
+spec:
+  group: core.spinkube.dev
+  names:
+    kind: SpinAppExecutor
+    listKind: SpinAppExecutorList
+    plural: spinappexecutors
+    singular: spinappexecutor
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: SpinAppExecutor is the Schema for the spinappexecutors API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: SpinAppExecutorSpec defines the desired state of SpinAppExecutor
+            properties:
+              createDeployment:
+                description: |-
+                  CreateDeployment specifies whether the Executor wants the SpinKube operator
+                  to create a deployment for the application or if it will be realized externally.
+                type: boolean
+              deploymentConfig:
+                description: |-
+                  DeploymentConfig specifies how the deployment should be configured when
+                  createDeployment is true.
+                properties:
+                  caCertSecret:
+                    description: |-
+                      CACertSecret specifies the name of the secret containing the CA
+                      certificates to be mounted to the deployment.
+                    type: string
+                  installDefaultCACerts:
+                    description: |-
+                      InstallDefaultCACerts specifies whether the default CA
+                      certificate bundle should be generated. When set a new secret
+                      will be created containing the certificates. If no secret name is
+                      defined in `CACertSecret` the secret name will be `spin-ca`.
+                    type: boolean
+                  otel:
+                    description: Otel provides Kubernetes Bindings to Otel Variables.
+                    properties:
+                      exporter_otlp_endpoint:
+                        description: ExporterOtlpEndpoint configures the default combined
+                          otlp endpoint for sending telemetry
+                        type: string
+                      exporter_otlp_logs_endpoint:
+                        description: ExporterOtlpLogsEndpoint configures the logs-specific
+                          otlp endpoint
+                        type: string
+                      exporter_otlp_metrics_endpoint:
+                        description: ExporterOtlpMetricsEndpoint configures the metrics-specific
+                          otlp endpoint
+                        type: string
+                      exporter_otlp_traces_endpoint:
+                        description: ExporterOtlpTracesEndpoint configures the trace-specific
+                          otlp endpoint
+                        type: string
+                    type: object
+                  runtimeClassName:
+                    description: |-
+                      RuntimeClassName is the runtime class name that should be used by pods created
+                      as part of a deployment. This should only be defined when SpintainerImage is not defined.
+                    type: string
+                  spinImage:
+                    description: |-
+                      SpinImage points to an image that will run Spin in a container to execute
+                      your SpinApp. This is an alternative to using the shim to execute your
+                      SpinApp. This should only be defined when RuntimeClassName is not
+                      defined. When specified, application images must be available without
+                      authentication.
+                    type: string
+                type: object
+            required:
+            - createDeployment
+            type: object
+          status:
+            description: SpinAppExecutorStatus defines the observed state of SpinAppExecutor
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

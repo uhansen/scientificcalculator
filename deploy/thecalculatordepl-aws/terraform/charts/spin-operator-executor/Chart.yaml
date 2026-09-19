@@ -1,0 +1,6 @@
+apiVersion: v2
+name: spin-operator-executor
+description: Installs the Spin shim executor configuration for the Spin Operator.
+type: application
+version: 0.1.0
+appVersion: "v0.6.1"
