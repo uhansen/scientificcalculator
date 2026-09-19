@@ -1,0 +1,21 @@
+apiVersion: http.keda.sh/v1alpha1
+kind: HTTPScaledObject
+metadata:
+  name: __APP_NAME__
+  namespace: default
+spec:
+  hosts:
+    - "__APP_HOST__"
+  scalingMetric:
+    concurrency:
+      targetValue: 10
+  scaleTargetRef:
+    name: __APP_NAME__
+    kind: Deployment
+    apiVersion: apps/v1
+    service: __APP_NAME__
+    port: 80
+  replicas:
+    min: 1
+    max: 5
+  scaledownPeriod: __SCALEDOWN_PERIOD__

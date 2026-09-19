@@ -478,6 +478,77 @@ bash deploy/thecalculatordepl/teardown.sh
 - The upstream shim-specific k3d node image is no longer published. This repo now follows the supported SpinKube installation model: standard k3d nodes plus Runtime Class Manager installing shim **v0.25.1** (Spin 4.0.1) onto labeled nodes.
 - The repo now targets Spin CLI **4.1.0**, Spin shim **v0.25.1** (Spin 4.0.1), `spin-sdk` **6.0.0**, `wac-cli` **0.10.1**, and `componentize-py` **0.25.0**. The calculator components still target `wasm32-wasip2`; true `wasm32-wasip3` builds remain blocked on upstream toolchain support.
 
+## Deploy on kind (local Kubernetes)
+
+The `deploy/thecalculatordepl-kind/` folder is a [kind](https://kind.sigs.k8s.io) equivalent of the k3d setup above, for machines that use kind instead of k3d. It reuses the shared install logic in `deploy/lib/spinkube-common.sh`.
+
+### How it works
+
+```
+curl localhost:3000
+  → Traefik (kind hostPort 3000→80 via extraPortMappings)
+    → KEDA HTTP interceptor proxy  ← buffers requests, triggers scale-up
+      → thecalculatorspin (SpinApp pod, wasmtime-spin-v2 runtime)
+```
+
+Unlike the k3d/cloud variants, the kind node is created from the official [`containerd-shim-spin/kind`](https://github.com/spinframework/containerd-shim-spin/pkgs/container/containerd-shim-spin%2Fkind) node image, which already has the Spin shim baked in — so there's no separate Runtime Class Manager install step, just applying the `wasmtime-spin-v2` `RuntimeClass` object. Traefik is exposed via `hostPort` (through kind's `extraPortMappings`) instead of a cloud load balancer.
+
+### Prerequisites
+
+| Tool | Version | Install |
+|---|---|---|
+| [kind](https://kind.sigs.k8s.io) | ≥ 0.20 | `brew install kind` / [kind.sigs.k8s.io](https://kind.sigs.k8s.io/#installation-and-usage) |
+| [kubectl](https://kubernetes.io/docs/tasks/tools/) | any | `brew install kubectl` |
+| [Helm](https://helm.sh) | ≥ 3.0 | `brew install helm` |
+| [Spin CLI](https://spinframework.dev/install) | 4.1.x | `curl -fsSL https://spinframework.dev/downloads/install.sh \| bash -s -- -v v4.1.0` |
+| Docker | running | required by kind |
+
+### Deploy
+
+```sh
+bash deploy/thecalculatordepl-kind/deploy.sh
+```
+
+The script performs these steps in order:
+
+1. **Push image** — same `ghcr.io` push/pull-secret flow as the k3d script
+2. **Create cluster** — `uha-cluster` kind cluster from the shim-enabled node image (`ghcr.io/spinframework/containerd-shim-spin/kind:v0.25.1`), with `extraPortMappings` for host ports 3000→80 and 3443→443
+3. **RuntimeClass** — applies `wasmtime-spin-v2` (handler `spin`)
+4. **cert-manager**, **spin-operator**, **KEDA** + **KEDA HTTP Add-on** — same versions as the k3d script
+5. **Traefik** — installed via Helm with `hostPort` ingress instead of a cloud `LoadBalancer`
+6. **SpinApp + HTTPScaledObject** — deploys the app and configures autoscaling (min=1, max=5, scaledownPeriod=60s)
+
+### Test
+
+```sh
+curl "http://localhost:3000/?calculate=add(2,3)"       # → 5
+curl "http://localhost:3000/?calculate=multiply(6,7)"  # → 42
+```
+
+### Tear down
+
+```sh
+bash deploy/thecalculatordepl-kind/teardown.sh
+```
+
+### Files
+
+| File | Purpose |
+|---|---|
+| `deploy/thecalculatordepl-kind/deploy.sh` | Full end-to-end deploy script |
+| `deploy/thecalculatordepl-kind/teardown.sh` | Delete the `uha-cluster` kind cluster |
+| `deploy/thecalculatordepl-kind/kind-config.yaml` | kind cluster spec (shim-enabled node image, `ingress-ready` label, hostPort mappings) |
+| `deploy/thecalculatordepl-kind/runtimeclass.yaml` | `wasmtime-spin-v2` RuntimeClass |
+| `deploy/thecalculatordepl-kind/traefik-values.yaml` | Traefik Helm values (hostPort ingress, no cloud LB) |
+| `deploy/thecalculatordepl-kind/spinapp.yaml` | SpinApp CR + ExternalName proxy Service + Traefik Ingress |
+| `deploy/thecalculatordepl-kind/httpscaledobject.yaml` | KEDA HTTPScaledObject (min=1 → max=5) |
+
+### Notes
+
+- Useful overrides: `CLUSTER_NAME` (default `uha-cluster`), `KIND_NODE_IMAGE` (default `ghcr.io/spinframework/containerd-shim-spin/kind:v0.25.1`), `HOST_HTTP_PORT`/`HOST_HTTPS_PORT` (default `3000`/`3443`).
+- This creates a cluster independent from any other kind clusters already running on the machine (kind context `kind-${CLUSTER_NAME}`) — it does not touch or reuse other clusters.
+- As with the k3d script, `min: 1` (not `0`) keeps spin-operator and the `HTTPScaledObject` in agreement — true scale-to-zero is not yet supported cleanly by spin-operator v0.6.1.
+
 ## Deploy on Hetzner Cloud, AWS EKS, and Azure AKS
 
 The repo now includes three end-to-end cloud deployment variants for the same
