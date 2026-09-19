@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# deploy.sh – Deploys thecalculatorspin on SpinKube / k3d with KEDA HTTP scale-to-zero
+# deploy.sh – Deploys thecalculatorspin on SpinKube / k3d or kind with KEDA HTTP autoscaling
 # Run from any directory; the script locates the repo root automatically.
 set -euo pipefail
 
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
+CLUSTER_PROVIDER="${CLUSTER_PROVIDER:-k3d}"
 CLUSTER_NAME="uha-cluster"
 GHCR_USER="uhansen"
 IMAGE="ghcr.io/${GHCR_USER}/thecalculatorspin:latest"
@@ -21,6 +22,18 @@ SCALEDOWN_PERIOD=60   # seconds idle before scaling down (min=1)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 SPIN_APP_DIR="${REPO_ROOT}/applications/thecalculatorspin"
+
+if [[ "${CLUSTER_PROVIDER}" == "kind" ]]; then
+  export CLUSTER_NAME="${CLUSTER_NAME}"
+  export KIND_CONFIG_FILE="${KIND_CONFIG_FILE:-${SCRIPT_DIR}/kind-config.yaml}"
+  exec bash "${REPO_ROOT}/deploy/thecalculatordepl-kind/deploy.sh"
+fi
+
+if [[ "${CLUSTER_PROVIDER}" != "k3d" ]]; then
+  echo "  ✗ Unsupported CLUSTER_PROVIDER: ${CLUSTER_PROVIDER}" >&2
+  echo "    Supported values: k3d, kind" >&2
+  exit 1
+fi
 
 # ---------------------------------------------------------------------------
 # Helpers

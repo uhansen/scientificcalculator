@@ -384,9 +384,9 @@ curl "http://127.0.0.1:3000/?calculate=sum(1,2,3,4,5)"  # → 15
 curl "http://127.0.0.1:3000/?calculate=avg(1,2,3,4,5)"  # → 3
 ```
 
-## Deploy on k3d / SpinKube (local Kubernetes)
+## Deploy on k3d or kind / SpinKube (local Kubernetes)
 
-The `deploy/thecalculatordepl/` folder contains everything needed to run `thecalculatorspin` on a local [k3d](https://k3d.io) cluster with [SpinKube](https://www.spinkube.dev) and [KEDA](https://keda.sh) HTTP autoscaling.
+The `deploy/thecalculatordepl/` folder is the shared local entrypoint for running `thecalculatorspin` on either a [k3d](https://k3d.io) or [kind](https://kind.sigs.k8s.io) cluster with [SpinKube](https://www.spinkube.dev) and [KEDA](https://keda.sh) HTTP autoscaling. It defaults to **k3d**; set `CLUSTER_PROVIDER=kind` to switch to the kind path.
 
 ### How it works
 
@@ -403,7 +403,7 @@ KEDA HTTP Add-on watches incoming request volume and scales the deployment betwe
 
 | Tool | Version | Install |
 |---|---|---|
-| [k3d](https://k3d.io) | ≥ 5.0 | `brew install k3d` / [k3d.io](https://k3d.io/#installation) |
+| [k3d](https://k3d.io) or [kind](https://kind.sigs.k8s.io) | k3d ≥ 5.0 / kind ≥ 0.20 | `brew install k3d` or `brew install kind` |
 | [kubectl](https://kubernetes.io/docs/tasks/tools/) | any | `brew install kubectl` |
 | [Helm](https://helm.sh) | ≥ 3.0 | `brew install helm` |
 | [Spin CLI](https://spinframework.dev/install) | 4.1.x | `curl -fsSL https://spinframework.dev/downloads/install.sh \| bash -s -- -v v4.1.0` |
@@ -412,23 +412,18 @@ KEDA HTTP Add-on watches incoming request volume and scales the deployment betwe
 ### Deploy
 
 ```sh
-# From the repo root — one command does everything:
+# From the repo root — default local provider is k3d:
 bash deploy/thecalculatordepl/deploy.sh
+
+# Use kind instead (reads deploy/thecalculatordepl/kind-config.yaml):
+CLUSTER_PROVIDER=kind bash deploy/thecalculatordepl/deploy.sh
 ```
 
 The script performs these steps in order:
 
-1. **Push image** — authenticates to `ghcr.io` via `GHCR_TOKEN`, `CR_PAT`, `GITHUB_TOKEN`, or the GitHub CLI token, runs `spin registry push ghcr.io/uhansen/thecalculatorspin:latest`, and creates an `imagePullSecret` in the cluster so nodes can pull the private package
-2. **Create cluster** — stock k3d cluster using `rancher/k3s:v1.35.2-k3s1`
-3. **Patch Traefik** — creates a `HelmChartConfig` so Traefik accepts `ExternalName` backends for the KEDA interceptor proxy
-4. **cert-manager** v1.21.1 — required by spin-operator webhooks
-5. **Runtime Class Manager** 0.2.0 + shim `v0.25.1` — installs `containerd-shim-spin` onto the k3d nodes and creates `wasmtime-spin-v2`
-6. **spin-operator** v0.6.1 — SpinApp CRD controller
-7. **ShimExecutor** — tells spin-operator to schedule apps via the RuntimeClass created by Runtime Class Manager
-8. **KEDA** 2.20.2 — core autoscaler
-9. **KEDA HTTP Add-on** 0.15.0 — `HTTPScaledObject` CRD + interceptor proxy
-10. **SpinApp + Ingress** — deploys the app and routes Traefik through the KEDA interceptor
-11. **HTTPScaledObject** — configures autoscaling (min=1, max=5, scaledownPeriod=60s)
+1. **Select provider** — `k3d` by default, or `kind` when `CLUSTER_PROVIDER=kind`
+2. **k3d path** — uses `deploy/thecalculatordepl/k3d-config.yaml`, pushes to `ghcr.io`, creates an `imagePullSecret`, patches Traefik's `ExternalName` support, then installs Runtime Class Manager, spin-operator, KEDA, and the app resources
+3. **kind path** — uses `deploy/thecalculatordepl/kind-config.yaml` and delegates to the tested `deploy/thecalculatordepl-kind/` implementation, which defaults to a local OCI registry at `localhost:5001`, configures kind's registry alias, then installs the same SpinKube/KEDA stack
 
 ### Test
 
@@ -456,6 +451,9 @@ kubectl get hpa -n default
 
 ```sh
 bash deploy/thecalculatordepl/teardown.sh
+
+# Or remove the kind cluster created by the same entrypoint:
+CLUSTER_PROVIDER=kind bash deploy/thecalculatordepl/teardown.sh
 ```
 
 ### Files
@@ -465,14 +463,16 @@ bash deploy/thecalculatordepl/teardown.sh
 | `deploy/thecalculatordepl/deploy.sh` | Full end-to-end deploy script |
 | `deploy/thecalculatordepl/teardown.sh` | Delete the cluster |
 | `deploy/thecalculatordepl/k3d-config.yaml` | k3d cluster spec (stock k3s nodes, port 3000→80) |
+| `deploy/thecalculatordepl/kind-config.yaml` | kind cluster spec (shim-enabled node image, `ingress-ready` label, hostPort mappings) |
 | `deploy/thecalculatordepl/traefik-helmchartconfig.yaml` | Enables Traefik `ExternalName` backends for the KEDA interceptor |
 | `deploy/thecalculatordepl/spinapp.yaml` | SpinApp CR + ExternalName proxy Service + Traefik Ingress |
 | `deploy/thecalculatordepl/httpscaledobject.yaml` | KEDA HTTPScaledObject (min=1 → max=5) |
 
 ### Notes
 
-- **ghcr.io image:** `ghcr.io/uhansen/thecalculatorspin:latest` — stored permanently in GitHub Container Registry (no expiry). The package is private; `deploy.sh` automatically creates an `imagePullSecret` (`ghcr-pull-secret`) in the cluster using `GHCR_TOKEN`, `CR_PAT`, `GITHUB_TOKEN`, or the GitHub CLI token. The token must include `write:packages` to push.
-- **Pull credentials:** when `~/.docker/config.json` already contains working GHCR credentials, `deploy.sh` reuses that file for the Kubernetes pull secret. This is more reliable than the GitHub CLI token for private package pulls.
+- **k3d registry path:** by default, the shared local script's k3d mode pushes `ghcr.io/uhansen/thecalculatorspin:latest` and creates an `imagePullSecret` (`ghcr-pull-secret`) in the cluster using `GHCR_TOKEN`, `CR_PAT`, `GITHUB_TOKEN`, or the GitHub CLI token. The token must include `write:packages` to push.
+- **kind registry path:** `CLUSTER_PROVIDER=kind` uses the local OCI registry flow from `deploy/thecalculatordepl-kind/` by default, so no GHCR package-write scope is required unless you explicitly set `REGISTRY_MODE=ghcr`.
+- **Pull credentials:** when `~/.docker/config.json` already contains working GHCR credentials, the k3d path reuses that file for the Kubernetes pull secret. This is more reliable than the GitHub CLI token for private package pulls.
 - **Re-deploying:** Re-run `deploy.sh` to push a new build and refresh the imagePullSecret, then `kubectl rollout restart deployment/thecalculatorspin`.
 - **min=1 (not 0):** The spin-operator reconciles `replicas: 1` from the SpinApp spec. Setting `min: 1` in the `HTTPScaledObject` keeps both controllers in agreement. True scale-to-zero would require removing the `replicas` field from the SpinApp and is not yet supported cleanly by spin-operator v0.6.1.
 - The upstream shim-specific k3d node image is no longer published. This repo now follows the supported SpinKube installation model: standard k3d nodes plus Runtime Class Manager installing shim **v0.25.1** (Spin 4.0.1) onto labeled nodes.
@@ -480,7 +480,7 @@ bash deploy/thecalculatordepl/teardown.sh
 
 ## Deploy on kind (local Kubernetes)
 
-The `deploy/thecalculatordepl-kind/` folder is a [kind](https://kind.sigs.k8s.io) equivalent of the k3d setup above, for machines that use kind instead of k3d. It reuses the shared install logic in `deploy/lib/spinkube-common.sh`.
+The `deploy/thecalculatordepl-kind/` folder contains the standalone kind implementation used by `CLUSTER_PROVIDER=kind bash deploy/thecalculatordepl/deploy.sh`. You can still run it directly when you want to work with the kind-specific pack on its own.
 
 ### How it works
 
@@ -506,6 +506,8 @@ The kind variant still uses the official [`containerd-shim-spin/kind`](https://g
 ### Deploy
 
 ```sh
+CLUSTER_PROVIDER=kind bash deploy/thecalculatordepl/deploy.sh
+# or run the standalone kind pack directly:
 bash deploy/thecalculatordepl-kind/deploy.sh
 ```
 
