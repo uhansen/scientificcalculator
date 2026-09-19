@@ -491,7 +491,7 @@ curl localhost:3000
       → thecalculatorspin (SpinApp pod, wasmtime-spin-v2 runtime)
 ```
 
-Unlike the k3d/cloud variants, the kind node is created from the official [`containerd-shim-spin/kind`](https://github.com/spinframework/containerd-shim-spin/pkgs/container/containerd-shim-spin%2Fkind) node image, which already has the Spin shim baked in — so there's no separate Runtime Class Manager install step, just applying the `wasmtime-spin-v2` `RuntimeClass` object. Traefik is exposed via `hostPort` (through kind's `extraPortMappings`) instead of a cloud load balancer.
+The kind variant still uses the official [`containerd-shim-spin/kind`](https://github.com/spinframework/containerd-shim-spin/pkgs/container/containerd-shim-spin%2Fkind) node image, but it also installs Runtime Class Manager to ensure the `spin` runtime is configured consistently on the node before deploying the app. Traefik is exposed via `hostPort` (through kind's `extraPortMappings`) instead of a cloud load balancer.
 
 ### Prerequisites
 
@@ -511,12 +511,13 @@ bash deploy/thecalculatordepl-kind/deploy.sh
 
 The script performs these steps in order:
 
-1. **Push image** — same `ghcr.io` push/pull-secret flow as the k3d script
+1. **Push image** — by default, pushes the Spin app to a local OCI registry at `localhost:5001` (created automatically if needed), avoiding any GHCR token requirement on local kind setups. Set `REGISTRY_MODE=ghcr` to use the same `ghcr.io` flow as the other deploy variants.
 2. **Create cluster** — `uha-cluster` kind cluster from the shim-enabled node image (`ghcr.io/spinframework/containerd-shim-spin/kind:v0.25.1`), with `extraPortMappings` for host ports 3000→80 and 3443→443
-3. **RuntimeClass** — applies `wasmtime-spin-v2` (handler `spin`)
-4. **cert-manager**, **spin-operator**, **KEDA** + **KEDA HTTP Add-on** — same versions as the k3d script
-5. **Traefik** — installed via Helm with `hostPort` ingress instead of a cloud `LoadBalancer`
-6. **SpinApp + HTTPScaledObject** — deploys the app and configures autoscaling (min=1, max=5, scaledownPeriod=60s)
+3. **Configure local registry access** — when using the default local registry mode, configures the kind node's containerd registry alias so Kubernetes can pull `localhost:5001/...` images successfully
+4. **Runtime Class Manager + shim** — labels the node, installs the shim, and ensures `wasmtime-spin-v2` is backed by a real `spin` runtime on the kind node
+5. **cert-manager**, **spin-operator**, **KEDA** + **KEDA HTTP Add-on** — same versions as the k3d script
+6. **Traefik** — installed via Helm with `hostPort` ingress instead of a cloud `LoadBalancer`
+7. **SpinApp + HTTPScaledObject** — deploys the app and configures autoscaling (min=1, max=5, scaledownPeriod=60s)
 
 ### Test
 
@@ -538,15 +539,15 @@ bash deploy/thecalculatordepl-kind/teardown.sh
 | `deploy/thecalculatordepl-kind/deploy.sh` | Full end-to-end deploy script |
 | `deploy/thecalculatordepl-kind/teardown.sh` | Delete the `uha-cluster` kind cluster |
 | `deploy/thecalculatordepl-kind/kind-config.yaml` | kind cluster spec (shim-enabled node image, `ingress-ready` label, hostPort mappings) |
-| `deploy/thecalculatordepl-kind/runtimeclass.yaml` | `wasmtime-spin-v2` RuntimeClass |
 | `deploy/thecalculatordepl-kind/traefik-values.yaml` | Traefik Helm values (hostPort ingress, no cloud LB) |
 | `deploy/thecalculatordepl-kind/spinapp.yaml` | SpinApp CR + ExternalName proxy Service + Traefik Ingress |
 | `deploy/thecalculatordepl-kind/httpscaledobject.yaml` | KEDA HTTPScaledObject (min=1 → max=5) |
 
 ### Notes
 
-- Useful overrides: `CLUSTER_NAME` (default `uha-cluster`), `KIND_NODE_IMAGE` (default `ghcr.io/spinframework/containerd-shim-spin/kind:v0.25.1`), `HOST_HTTP_PORT`/`HOST_HTTPS_PORT` (default `3000`/`3443`).
+- Useful overrides: `REGISTRY_MODE` (`local` by default; set to `ghcr` to reuse the GitHub Container Registry flow), `LOCAL_REGISTRY_NAME` (default `kind-registry`), `LOCAL_REGISTRY_PORT` (default `5001`), `CLUSTER_NAME` (default `uha-cluster`), `KIND_NODE_IMAGE` (default `ghcr.io/spinframework/containerd-shim-spin/kind:v0.25.1`), `HOST_HTTP_PORT`/`HOST_HTTPS_PORT` (default `3000`/`3443`).
 - This creates a cluster independent from any other kind clusters already running on the machine (kind context `kind-${CLUSTER_NAME}`) — it does not touch or reuse other clusters.
+- In the default local-registry mode, no image pull secret is needed; the kind node is configured to resolve `localhost:5001` to the registry container directly.
 - As with the k3d script, `min: 1` (not `0`) keeps spin-operator and the `HTTPScaledObject` in agreement — true scale-to-zero is not yet supported cleanly by spin-operator v0.6.1.
 
 ## Deploy on Hetzner Cloud, AWS EKS, and Azure AKS

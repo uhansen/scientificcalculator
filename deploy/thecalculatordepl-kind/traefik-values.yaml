@@ -2,7 +2,6 @@ additionalArguments:
   - --providers.kubernetesingress.allowExternalNameServices=true
   - --providers.kubernetescrd.allowExternalNameServices=true
   - --ping=true
-  - --ping.entrypoint=web
 ports:
   web:
     hostPort: 80
