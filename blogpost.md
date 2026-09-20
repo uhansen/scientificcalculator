@@ -861,3 +861,99 @@ Functions backed by pure Rust or JavaScript components (`add`, `subtract`, `mult
 Both approaches use the same `the-calculator.wasm` and the same WIT interface. The Component Model's value is that neither the components nor their polyglot origins change — only how they are packaged and delivered.
 
 ---
+
+## Deploy to AWS and Azure
+
+The repository now contains **two deployment styles** for both AWS and Azure.
+The first is a direct shell-driven path that provisions the cluster with the
+cloud CLI (`eksctl` on AWS, `az aks` on Azure) and then installs the SpinKube
+stack. The second is a **Terraform-based path** that manages the cluster
+infrastructure, installs Envoy Gateway, SpinKube, KEDA, and the calculator
+application as one declarative system.
+
+What was done in practice:
+
+- added an **AWS EKS Terraform stack** under
+  `deploy/thecalculatordepl-aws/terraform/`
+- added an **Azure AKS Terraform stack** under
+  `deploy/thecalculatordepl-azure/terraform/`
+- added wrapper scripts that bootstrap remote Terraform state, write local
+  ignored `terraform.auto.tfvars`, run `terraform init/plan/apply`, refresh
+  kubeconfig, and verify the public endpoint
+- kept the original shell-based deploy paths in place for users who want a
+  simpler imperative workflow
+
+### Deploy on AWS
+
+For AWS there are now two supported paths.
+
+The original shell-based deployment:
+
+```sh
+bash deploy/thecalculatordepl-aws/deploy.sh
+```
+
+This path uses `eksctl` to create or reuse an EKS cluster, installs Traefik,
+SpinKube, KEDA, and deploys the `thecalculatorspin` Spin application.
+
+The Terraform-based deployment:
+
+```sh
+export GHCR_TOKEN=...
+bash deploy/thecalculatordepl-aws/terraform/deploy.sh
+```
+
+That wrapper bootstraps the S3 backend if needed, applies the EKS
+infrastructure, installs AWS Load Balancer Controller, Envoy Gateway,
+SpinKube, KEDA, and the app, then runs the verification request.
+
+Typical verification:
+
+```sh
+curl -H 'Host: thecalculatorspin.example.internal' \
+  "http://<eks-envoy-endpoint>/?calculate=add(2,3)"
+```
+
+### Deploy on Azure
+
+Azure also has both an imperative and a Terraform-managed path.
+
+The original shell-based deployment:
+
+```sh
+bash deploy/thecalculatordepl-azure/deploy.sh
+```
+
+This creates or reuses a resource group and AKS cluster with the Azure CLI,
+then installs Traefik, SpinKube, KEDA, and the calculator application.
+
+The Terraform-based deployment:
+
+```sh
+export GHCR_TOKEN=...
+bash deploy/thecalculatordepl-azure/terraform/deploy.sh
+```
+
+This wrapper bootstraps the Azure Storage backend if needed, applies the AKS
+infrastructure, installs Envoy Gateway, SpinKube, KEDA, and the app, then
+refreshes kubeconfig and verifies the HTTP endpoint.
+
+Typical verification:
+
+```sh
+curl -H 'Host: thecalculatorspin.example.internal' \
+  "http://<aks-envoy-endpoint>/?calculate=multiply(6,7)"
+```
+
+### Why the cloud work matters
+
+The important result is not just that the calculator runs in Kubernetes. It is
+that the **same composed WASM application** can move unchanged between local
+development, imperative cloud deployments, and fully declarative Terraform
+stacks. The provider-specific logic is mostly cluster provisioning and
+load-balancer integration; the actual WebAssembly deployment model stays the
+same.
+
+That is a strong demonstration of the Component Model story: one polyglot WASM
+application, packaged once, deployed repeatedly across AWS and Azure with the
+same SpinKube runtime architecture.

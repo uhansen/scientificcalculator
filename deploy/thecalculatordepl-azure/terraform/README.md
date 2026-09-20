@@ -42,6 +42,30 @@ available. This Terraform stack is an additional deployment option.
 
 ## 1. Bootstrap remote state
 
+Fast path with the wrapper script:
+
+```sh
+./deploy.sh
+```
+
+The script:
+
+- bootstraps the Azure Storage backend if `backend.hcl` does not exist yet
+- writes a local ignored `terraform.auto.tfvars` from environment variables
+- runs `terraform init`, `plan`, and `apply`
+- updates kubeconfig and verifies the public Envoy endpoint
+
+Important environment overrides:
+
+- `AZ_LOCATION`
+- `AZ_RESOURCE_GROUP`
+- `AUTHORIZED_IP_RANGES` (defaults to your current public `/32`)
+- `GHCR_TOKEN`
+- `APP_HOST`
+- `STATE_STORAGE_ACCOUNT_NAME`
+
+For a manual step-by-step flow:
+
 From the repository root:
 
 ```sh
@@ -91,6 +115,15 @@ terraform init -backend-config=backend.hcl
 terraform plan
 terraform apply
 ```
+
+Destroy the main stack later with:
+
+```sh
+./teardown.sh
+```
+
+Set `DESTROY_BACKEND=true` and `STATE_STORAGE_ACCOUNT_NAME=...` if you also
+want the bootstrap storage account removed.
 
 ## 4. Verify
 

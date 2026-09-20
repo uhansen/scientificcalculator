@@ -655,15 +655,7 @@ bash deploy/thecalculatordepl-aws/deploy.sh
 Terraform alternative:
 
 ```sh
-cd deploy/thecalculatordepl-aws/terraform/bootstrap
-terraform init
-terraform apply -var='state_bucket_name=<globally-unique-bucket>'
-
-cd ..
-cp backend.hcl.example backend.hcl
-cp terraform.tfvars.example terraform.tfvars
-terraform init -backend-config=backend.hcl
-terraform apply
+bash deploy/thecalculatordepl-aws/terraform/deploy.sh
 ```
 
 Tear it down:
@@ -686,6 +678,8 @@ Terraform-specific notes:
   and the app through Terraform-managed Helm/Kubernetes resources
 - expects a private GHCR image pull token and stores that Kubernetes secret in
   Terraform state, so use the provided encrypted S3 backend bootstrap
+- `deploy/thecalculatordepl-aws/terraform/teardown.sh` destroys the main stack;
+  set `DESTROY_BACKEND=true` to remove the S3 backend too
 
 ### Azure AKS (`deploy/thecalculatordepl-azure/`)
 
@@ -712,15 +706,7 @@ bash deploy/thecalculatordepl-azure/deploy.sh
 Terraform alternative:
 
 ```sh
-cd deploy/thecalculatordepl-azure/terraform/bootstrap
-terraform init
-terraform apply -var='state_storage_account_name=<globally-unique-name>'
-
-cd ..
-cp backend.hcl.example backend.hcl
-cp terraform.tfvars.example terraform.tfvars
-terraform init -backend-config=backend.hcl
-terraform apply
+bash deploy/thecalculatordepl-azure/terraform/deploy.sh
 ```
 
 Tear it down:
@@ -748,6 +734,8 @@ Terraform-specific notes:
   Terraform-managed Helm/Kubernetes resources
 - expects a private GHCR image pull token and stores that Kubernetes secret in
   Terraform state, so use the provided encrypted Azure Storage bootstrap
+- `deploy/thecalculatordepl-azure/terraform/teardown.sh` destroys the main
+  stack; set `DESTROY_BACKEND=true` to remove the Azure Storage backend too
 
 ### Shared implementation notes
 

@@ -33,6 +33,30 @@ available. This Terraform stack is an additional deployment option.
 
 ## 1. Bootstrap remote state
 
+Fast path with the wrapper script:
+
+```sh
+./deploy.sh
+```
+
+The script:
+
+- bootstraps the S3 backend if `backend.hcl` does not exist yet
+- writes a local ignored `terraform.auto.tfvars` from environment variables
+- runs `terraform init`, `plan`, and `apply`
+- updates kubeconfig and verifies the public Envoy endpoint
+
+Important environment overrides:
+
+- `AWS_REGION`
+- `CLUSTER_NAME`
+- `CLUSTER_ENDPOINT_PUBLIC_ACCESS_CIDRS` (defaults to your current public `/32`)
+- `GHCR_TOKEN`
+- `APP_HOST`
+- `STATE_BUCKET_NAME`
+
+For a manual step-by-step flow:
+
 From the repository root:
 
 ```sh
@@ -82,6 +106,15 @@ terraform init -backend-config=backend.hcl
 terraform plan
 terraform apply
 ```
+
+Destroy the main stack later with:
+
+```sh
+./teardown.sh
+```
+
+Set `DESTROY_BACKEND=true` and `STATE_BUCKET_NAME=...` if you also want the
+bootstrap S3 bucket removed.
 
 ## 4. Verify
 
