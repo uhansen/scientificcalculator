@@ -3,6 +3,7 @@ name: CI/CD
 on:
   push:
     branches:
+      - "master"
       - "topic/**"
       - "feature/**"
 
@@ -191,6 +192,7 @@ jobs:
     name: Open PR → master
     needs: build-and-push
     runs-on: ubuntu-latest
+    if: github.ref_name != 'master'
 
     steps:
       - name: Checkout
