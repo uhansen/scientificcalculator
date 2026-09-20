@@ -1,0 +1,13 @@
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: {{ .Values.envoyGateway.proxy.name }}
+  namespace: {{ .Values.envoyGateway.proxy.namespace }}
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyService:
+        type: LoadBalancer
+        annotations:
+{{ toYaml .Values.envoyGateway.proxy.annotations | nindent 10 }}

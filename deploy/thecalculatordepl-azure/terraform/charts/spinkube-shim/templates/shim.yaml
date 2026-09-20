@@ -1,0 +1,32 @@
+apiVersion: runtime.spinkube.dev/v1alpha1
+kind: Shim
+metadata:
+  name: {{ .Values.shim.name }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.shim.name }}
+    app.kubernetes.io/instance: {{ .Values.shim.name }}
+    app.kubernetes.io/part-of: runtime-class-manager
+spec:
+  nodeSelector:
+{{ toYaml .Values.shim.nodeSelector | nindent 4 }}
+
+  fetchStrategy:
+    platforms:
+      - os: linux
+        arch: aarch64
+        location: "https://github.com/spinframework/containerd-shim-spin/releases/download/{{ .Values.shim.version }}/containerd-shim-spin-v2-linux-aarch64.tar.gz"
+        sha256: "5ca9c9207a146a182dc9c870eaaad1afbf64e1d9a4781228dbf6e7ef90ff2e1f"
+      - os: linux
+        arch: x86_64
+        location: "https://github.com/spinframework/containerd-shim-spin/releases/download/{{ .Values.shim.version }}/containerd-shim-spin-v2-linux-x86_64.tar.gz"
+        sha256: "1755fbeb2dec7d026faf8c37031d8a025975f5e194b782da10188206a386d6e4"
+
+  containerdRuntimeOptions:
+    SystemdCgroup: "true"
+
+  runtimeClass:
+    name: {{ .Values.shim.runtimeClassName }}
+    handler: {{ .Values.shim.runtimeHandler }}
+
+  rolloutStrategy:
+    type: recreate

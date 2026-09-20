@@ -1,0 +1,16 @@
+app:
+  name: thecalculatorspin
+  host: thecalculatorspin.local
+  namespace: default
+envoyGateway:
+  className: thecalculatorspin-envoy
+  gatewayName: thecalculatorspin-http
+  proxy:
+    name: thecalculatorspin-envoyproxy
+    namespace: default
+    annotations:
+      service.beta.kubernetes.io/azure-load-balancer-internal: "false"
+keda:
+  namespace: keda
+  interceptorServiceName: keda-add-ons-http-interceptor-proxy
+  interceptorServicePort: 8080

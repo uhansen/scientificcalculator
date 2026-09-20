@@ -1,0 +1,5 @@
+resource_group_name  = "replace-with-bootstrap-output"
+storage_account_name = "replace-with-bootstrap-output"
+container_name       = "tfstate"
+key                  = "deploy/thecalculatordepl-azure/terraform/terraform.tfstate"
+use_azuread_auth     = true

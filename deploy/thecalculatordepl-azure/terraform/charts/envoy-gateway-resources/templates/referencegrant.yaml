@@ -1,0 +1,14 @@
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: allow-{{ .Values.app.name }}-route
+  namespace: {{ .Values.keda.namespace }}
+spec:
+  from:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      namespace: {{ .Values.app.namespace }}
+  to:
+    - group: ""
+      kind: Service
+      name: {{ .Values.keda.interceptorServiceName }}

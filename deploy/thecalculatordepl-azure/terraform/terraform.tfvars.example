@@ -1,0 +1,27 @@
+location             = "denmarkeast"
+project              = "scientificcalculator"
+environment          = "dev"
+resource_group_name  = "rg-thecalculatorspin-aks"
+cluster_name         = "thecalculatorspin-aks"
+kubernetes_version   = "1.31"
+authorized_ip_ranges = [
+  "203.0.113.10/32",
+]
+
+node_vm_size          = "Standard_D4s_v5"
+node_count            = 3
+node_os_disk_size_gb  = 50
+
+vnet_cidr        = "10.60.0.0/16"
+node_subnet_cidr = "10.60.1.0/24"
+pod_cidr         = "10.244.0.0/16"
+service_cidr     = "10.245.0.0/24"
+
+app_host      = "thecalculatorspin.example.internal"
+ghcr_username = "uhansen"
+ghcr_token    = "replace-with-a-ghcr-token"
+image         = "ghcr.io/uhansen/thecalculatorspin:latest"
+
+tags = {
+  Owner = "platform-team"
+}

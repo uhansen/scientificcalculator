@@ -695,6 +695,11 @@ Prerequisites:
 - an authenticated `az login` session
 - permission to create resource groups, AKS clusters, and load balancers
 
+This directory now contains **two Azure deployment paths**:
+
+1. `deploy.sh` / `teardown.sh` — the existing `az aks` + Traefik flow
+2. `terraform/` — a Terraform-managed AKS + Envoy Gateway + SpinKube flow
+
 The script creates or reuses a resource group and AKS cluster, refreshes
 kubeconfig, and installs the shared stack.
 
@@ -702,6 +707,20 @@ Run it:
 
 ```sh
 bash deploy/thecalculatordepl-azure/deploy.sh
+```
+
+Terraform alternative:
+
+```sh
+cd deploy/thecalculatordepl-azure/terraform/bootstrap
+terraform init
+terraform apply -var='state_storage_account_name=<globally-unique-name>'
+
+cd ..
+cp backend.hcl.example backend.hcl
+cp terraform.tfvars.example terraform.tfvars
+terraform init -backend-config=backend.hcl
+terraform apply
 ```
 
 Tear it down:
@@ -717,6 +736,18 @@ Useful overrides:
 - `CLUSTER_NAME`
 - `NODE_COUNT`
 - `NODE_VM_SIZE`
+
+Terraform-specific notes:
+
+- uses **Envoy Gateway** instead of Traefik
+- uses **Azure CNI Overlay** networking for the AKS cluster
+- does **not** install a separate load-balancer controller — AKS's built-in
+  cloud provider provisions the public Azure Load Balancer for the Envoy
+  `Service type=LoadBalancer`
+- installs Runtime Class Manager, SpinKube, KEDA, and the app through
+  Terraform-managed Helm/Kubernetes resources
+- expects a private GHCR image pull token and stores that Kubernetes secret in
+  Terraform state, so use the provided encrypted Azure Storage bootstrap
 
 ### Shared implementation notes
 

@@ -1,0 +1,12 @@
+app:
+  name: thecalculatorspin
+  namespace: default
+  host: thecalculatorspin.local
+  image: ghcr.io/uhansen/thecalculatorspin:latest
+  imagePullSecret: ghcr-pull-secret
+  executor: containerd-shim-spin
+autoscaling:
+  minReplicas: 1
+  maxReplicas: 5
+  concurrency: 10
+  scaledownPeriod: 60

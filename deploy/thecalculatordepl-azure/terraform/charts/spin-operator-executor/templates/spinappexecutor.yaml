@@ -1,0 +1,9 @@
+apiVersion: core.spinkube.dev/v1alpha1
+kind: SpinAppExecutor
+metadata:
+  name: {{ .Values.executor.name }}
+spec:
+  createDeployment: true
+  deploymentConfig:
+    runtimeClassName: {{ .Values.executor.runtimeClassName }}
+    installDefaultCACerts: true
