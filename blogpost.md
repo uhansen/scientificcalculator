@@ -461,14 +461,14 @@ The full deployment manifests are in `thecalculatordepl/` in the [scientificcalc
 
 ## Cloud Deployments
 
-The local k3d setup proved that the Spin app, SpinKube, and KEDA HTTP autoscaling work well together. The next step was to package that same deployment model for real cloud environments. The repository now includes three cloud-specific deploy folders that all follow the same pattern:
+The local k3d setup proved that the Spin app, SpinKube, and KEDA HTTP autoscaling work well together. The next step was to package that same deployment model for real cloud environments. The repository now includes multiple cloud-specific deploy folders that all follow the same pattern:
 
 1. Push `thecalculatorspin` to `ghcr.io`
 2. Provision a Kubernetes cluster for the target cloud
 3. Install Traefik, cert-manager, Runtime Class Manager, `containerd-shim-spin`, spin-operator, KEDA, and the KEDA HTTP Add-on
 4. Deploy the `SpinApp`, route ingress through the KEDA interceptor, and verify the HTTP API
 
-The common installation steps are shared through `deploy/lib/spinkube-common.sh`, while each provider-specific folder handles its own cluster provisioning and load balancer integration.
+Most of the common installation steps are shared through `deploy/lib/spinkube-common.sh`, while each provider-specific folder handles its own cluster provisioning and load balancer integration.
 
 ### Hetzner Cloud
 
@@ -494,6 +494,36 @@ The teardown script deletes the VMs, firewall, and network again:
 
 ```sh
 bash deploy/thecalculatordepl-hetzner/teardown.sh
+```
+
+### Hetzner Cloud kubeadm
+
+There is now also a second Hetzner deployment path inspired directly by the
+Hetzner community Kubernetes tutorial. Instead of `k3s`, it bootstraps raw
+Ubuntu servers with containerd, kubeadm, kubelet, and kubectl, initializes the
+control plane with `kubeadm init`, joins workers with `kubeadm join`, then
+installs the Hetzner Cloud Controller Manager, flannel, and the Hetzner CSI
+driver.
+
+On top of that upstream-style cluster, the repository installs Envoy Gateway,
+SpinKube, KEDA, and the calculator app:
+
+```sh
+bash deploy/thecalculatordepl-hetzner-kubeadm/deploy.sh
+```
+
+The public entrypoint is exposed through a Hetzner Load Balancer attached to
+Envoy:
+
+```sh
+curl -H 'Host: thecalculatorspin.local' \
+  "http://<hetzner-envoy-endpoint>/?calculate=add(2,3)"
+```
+
+And cleanup removes the created servers, firewall, and network:
+
+```sh
+bash deploy/thecalculatordepl-hetzner-kubeadm/teardown.sh
 ```
 
 ### AWS EKS
@@ -542,11 +572,44 @@ Teardown removes the entire resource group:
 bash deploy/thecalculatordepl-azure/teardown.sh
 ```
 
+### Telekom / T Cloud Public CCE
+
+The Telekom/T-Systems cloud path targets OpenTelekomCloud Cloud Container
+Engine (CCE). Unlike the shell-based AWS and Azure flows, this deployment uses
+a bash wrapper with embedded Terraform: Terraform creates or reuses the CCE
+cluster and retrieves kubeconfig, then the wrapper installs Envoy Gateway,
+SpinKube, KEDA, and the calculator application on top.
+
+Because the first version expects existing networking, the operator provides
+the VPC, subnet, availability zone, and SSH key pair up front. Envoy is
+exposed with OpenTelekomCloud ELB annotations, so `Service type=LoadBalancer`
+creates or binds a cloud load balancer for the public endpoint.
+
+The entry point is:
+
+```sh
+bash deploy/thecalculatordepl-telekom/deploy.sh
+```
+
+And verification follows the same request shape as the other cloud paths:
+
+```sh
+curl -H 'Host: thecalculatorspin.local' \
+  "http://<telekom-envoy-endpoint>/?calculate=add(2,3)"
+```
+
+Teardown removes the Terraform-managed CCE resources but leaves externally
+provided networking in place:
+
+```sh
+bash deploy/thecalculatordepl-telekom/teardown.sh
+```
+
 ### Why this matters
 
 The interesting part is not that Kubernetes can run an HTTP service — that is routine. The interesting part is that the deployment unit is still the exact same Spin OCI artifact containing the `.wasm` application. The cloud-specific logic is almost entirely about provisioning the cluster and integrating the load balancer; the SpinKube and KEDA layers are effectively portable across providers.
 
-That is a strong result for the WASM Component Model story. The calculator is written across multiple languages, composed into one WASM application, packaged once, and then deployed with the same runtime model on a laptop cluster, on Hetzner VMs, on Amazon EKS, and on Azure AKS.
+That is a strong result for the WASM Component Model story. The calculator is written across multiple languages, composed into one WASM application, packaged once, and then deployed with the same runtime model on a laptop cluster, on Hetzner VMs through both `k3s` and kubeadm-based setups, on Amazon EKS, on Azure AKS, and on Telekom CCE.
 
 ---
 

@@ -1,0 +1,21 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ .Values.app.name }}
+  namespace: {{ .Values.app.namespace }}
+spec:
+  parentRefs:
+    - name: {{ .Values.envoyGateway.gatewayName }}
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            hostname: {{ .Values.app.host | quote }}
+      backendRefs:
+        - name: {{ .Values.keda.interceptorServiceName }}
+          namespace: {{ .Values.keda.namespace }}
+          port: {{ .Values.keda.interceptorServicePort }}

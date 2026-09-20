@@ -1,0 +1,19 @@
+app:
+  name: thecalculatorspin
+  host: thecalculatorspin.local
+  namespace: default
+envoyGateway:
+  className: thecalculatorspin-envoy
+  gatewayName: thecalculatorspin-http
+  proxy:
+    name: thecalculatorspin-envoyproxy
+    namespace: default
+    annotations:
+      load-balancer.hetzner.cloud/name: "thecalculatorspin-envoy"
+      load-balancer.hetzner.cloud/location: "fsn1"
+      load-balancer.hetzner.cloud/type: "lb11"
+      load-balancer.hetzner.cloud/use-private-ip: "true"
+keda:
+  namespace: keda
+  interceptorServiceName: keda-add-ons-http-interceptor-proxy
+  interceptorServicePort: 8080

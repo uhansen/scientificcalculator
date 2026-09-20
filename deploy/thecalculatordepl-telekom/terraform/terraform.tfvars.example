@@ -1,0 +1,12 @@
+project              = "scientificcalculator"
+environment          = "dev"
+cluster_name         = "thecalculatorspin-cce"
+cluster_flavor       = "cce.s1.small"
+cluster_version      = "v1.30"
+vpc_id               = "replace-with-existing-vpc-id"
+subnet_id            = "replace-with-existing-subnet-network-id"
+availability_zone    = "eu-de-01"
+ssh_key_name         = "replace-with-existing-keypair-name"
+node_flavor          = "s3.large.2"
+node_count           = 3
+api_access_trustlist = ["203.0.113.10/32"]

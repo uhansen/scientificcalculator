@@ -1,0 +1,6 @@
+apiVersion: v2
+name: thecalculator-app
+description: SpinApp and HTTPScaledObject resources for the calculator workload.
+type: application
+version: 0.1.0
+appVersion: "latest"

@@ -630,6 +630,67 @@ Useful overrides:
 - `WORKER_COUNT`
 - `KUBECONFIG_PATH`
 
+### Hetzner Cloud kubeadm (`deploy/thecalculatordepl-hetzner-kubeadm/`)
+
+This directory adds a **second Hetzner deployment path** beside the existing
+`k3s`-based one:
+
+1. `deploy/thecalculatordepl-hetzner/` — the original `k3s` + Traefik flow
+2. `deploy/thecalculatordepl-hetzner-kubeadm/` — a kubeadm/containerd/flannel
+   flow inspired by the Hetzner community Kubernetes tutorial
+
+Prerequisites:
+
+- `hcloud`
+- `jq`
+- `ssh`
+- `scp`
+- `kubectl`
+- `helm`
+- `spin`
+- `gh`
+- `curl`
+- `sed`
+- `HCLOUD_TOKEN`
+- `HCLOUD_SSH_KEY` set to an existing Hetzner Cloud SSH key
+
+The script creates or reuses a Hetzner network, firewall, one control-plane
+server, and worker servers, bootstraps them with kubeadm, installs Hetzner
+CCM, flannel, Hetzner CSI, Envoy Gateway, SpinKube, KEDA, and the app.
+
+Run it:
+
+```sh
+bash deploy/thecalculatordepl-hetzner-kubeadm/deploy.sh
+```
+
+Tear it down:
+
+```sh
+bash deploy/thecalculatordepl-hetzner-kubeadm/teardown.sh
+```
+
+Useful overrides:
+
+- `CLUSTER_NAME`
+- `HCLOUD_LOCATION`
+- `HCLOUD_NETWORK_ZONE`
+- `CONTROL_PLANE_SERVER_TYPE`
+- `WORKER_SERVER_TYPE`
+- `WORKER_COUNT`
+- `KUBERNETES_VERSION`
+- `HCLOUD_LOAD_BALANCER_NAME`
+- `HCLOUD_LOAD_BALANCER_LOCATION`
+- `HCLOUD_LOAD_BALANCER_TYPE`
+
+Hetzner kubeadm-specific notes:
+
+- uses **Envoy Gateway** instead of Traefik
+- follows the tutorial’s kubeadm/containerd/flannel approach instead of `k3s`
+- installs Hetzner CCM and Hetzner CSI explicitly
+- exposes Envoy with Hetzner Load Balancer annotations on
+  `Service type=LoadBalancer`
+
 ### AWS EKS (`deploy/thecalculatordepl-aws/`)
 
 Prerequisites:
@@ -737,13 +798,72 @@ Terraform-specific notes:
 - `deploy/thecalculatordepl-azure/terraform/teardown.sh` destroys the main
   stack; set `DESTROY_BACKEND=true` to remove the Azure Storage backend too
 
+### Telekom / T Cloud Public CCE (`deploy/thecalculatordepl-telekom/`)
+
+Prerequisites:
+
+- OpenTelekomCloud / Telekom T Cloud Public credentials via `OS_CLOUD` or the
+  common `OS_*` OpenStack environment variables
+- an existing VPC and subnet
+- an existing SSH key pair in the target project
+- `kubectl`, `helm`, `spin`, `gh`, and Terraform (directly or through `mise`)
+
+This deployment path uses a **bash wrapper with embedded Terraform**:
+
+- Terraform creates or reuses the CCE cluster and retrieves kubeconfig
+- the wrapper then installs Envoy Gateway, Runtime Class Manager, SpinKube,
+  KEDA, and the app with `helm`/`kubectl`
+
+Run it:
+
+```sh
+bash deploy/thecalculatordepl-telekom/deploy.sh
+```
+
+Tear it down:
+
+```sh
+bash deploy/thecalculatordepl-telekom/teardown.sh
+```
+
+Required overrides:
+
+- `CCE_VPC_ID`
+- `CCE_SUBNET_ID`
+- `CCE_AVAILABILITY_ZONE`
+- `CCE_SSH_KEY_NAME`
+
+Useful overrides:
+
+- `CLUSTER_NAME`
+- `CCE_CLUSTER_FLAVOR`
+- `CCE_CLUSTER_VERSION`
+- `CCE_NODE_FLAVOR`
+- `CCE_NODE_COUNT`
+- `CCE_EXISTING_CLUSTER_ID` or `CCE_EXISTING_CLUSTER_NAME`
+- `CCE_ELB_ID` to bind Envoy to an existing ELB instead of autocreating one
+
+Telekom-specific notes:
+
+- uses **Envoy Gateway** instead of Traefik
+- expects existing networking instead of creating VPC/subnet resources
+- creates or reuses a CCE cluster, then retrieves kubeconfig through the
+  OpenTelekomCloud Terraform provider
+- exposes Envoy with CCE ELB annotations on `Service type=LoadBalancer`
+- leaves external VPC/subnet resources untouched during teardown
+- skips cluster destruction when the deployment reused an existing cluster
+
 ### Shared implementation notes
 
 - The common cloud-agnostic installation logic lives in
   `deploy/lib/spinkube-common.sh`.
-- The deploy scripts use Traefik as the ingress controller on all three clouds
-  and expose it with each cloud's native `Service type=LoadBalancer`
-  integration.
+- The Hetzner `k3s`, AWS shell, and Azure shell deploy scripts use Traefik as
+  the ingress controller and expose it with each cloud's native
+  `Service type=LoadBalancer` integration.
+- The Hetzner kubeadm deployment and the Terraform AWS/Azure/Telekom paths use
+  Envoy Gateway instead.
+- The Telekom deployment and the Terraform AWS/Azure paths use Envoy Gateway
+  for ingress and external exposure.
 - The app is reached through the KEDA HTTP interceptor using the synthetic host
   `thecalculatorspin.local`; the scripts print the load balancer address to use
   with the `Host` header.
