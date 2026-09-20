@@ -102,7 +102,20 @@ jobs:
 
       - name: Install wac-cli
         if: steps.cache-wac.outputs.cache-hit != 'true'
-        run: cargo install wac-cli --version ${{ env.WAC_VERSION }} --locked
+        run: |
+          case "$(uname -m)" in
+            x86_64) WAC_TARGET="x86_64-unknown-linux-musl" ;;
+            aarch64|arm64) WAC_TARGET="aarch64-unknown-linux-musl" ;;
+            *)
+              echo "Unsupported runner architecture: $(uname -m)" >&2
+              exit 1
+              ;;
+          esac
+          curl -fsSL \
+            "https://github.com/bytecodealliance/wac/releases/download/v${{ env.WAC_VERSION }}/wac-cli-${WAC_TARGET}" \
+            -o "${HOME}/.cargo/bin/wac"
+          chmod +x "${HOME}/.cargo/bin/wac"
+          "${HOME}/.cargo/bin/wac" --version
 
       # ── Spin ──────────────────────────────────────────────────────────────
       - name: Cache Spin binary
