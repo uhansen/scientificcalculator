@@ -61,8 +61,8 @@ Exports a `statistics` interface with:
 - `sum(numbers: list<f64>) -> f64` — sum of a list of numbers
 - `avg(numbers: list<f64>) -> f64` — arithmetic mean (returns 0.0 for empty list)
 
-### `thecalculatorspin` (Rust, Spin 4.1 async HTTP app)
-An HTTP application built with [Spin](https://spinframework.dev) that wraps `the-calculator` and exposes it over HTTP. It now uses the async `spin-sdk` 6 `#[http_service]` model. Send a GET request with an `?calculate=` query parameter; the result is returned as plain text.
+### `thecalculatorspin` (Rust, Spin 4.2 build tooling)
+An HTTP application built with [Spin](https://spinframework.dev) that wraps `the-calculator` and exposes it over HTTP. It continues to use the async `spin-sdk` 6 `#[http_service]` model so it stays compatible with the latest released SpinKube shim runtime, while the local build tooling and CI use Spin CLI 4.2.2. Send a GET request with an `?calculate=` query parameter; the result is returned as plain text.
 
 ### `thecalculatorcli` (Rust, WASI CLI)
 An interactive command-line REPL that imports `the-calculator` via WIT and is composed with it using `wac`. Run with `wasmtime run` for an interactive calculator prompt.
@@ -99,10 +99,10 @@ pip install componentize-py==0.25.0
 ```
 
 ### `thecalculatorspin` (Spin HTTP app)
-Requires [Spin 4.1+](https://spinframework.dev/install) in addition to the Rust toolchain and `wac-cli` listed above:
+Requires [Spin 4.2+](https://spinframework.dev/install) in addition to the Rust toolchain and `wac-cli` listed above:
 ```sh
-# Install Spin 4.1
-curl -fsSL https://spinframework.dev/downloads/install.sh | bash -s -- -v v4.1.0
+# Install Spin 4.2.2
+curl -fsSL https://spinframework.dev/downloads/install.sh | bash -s -- -v v4.2.2
 ```
 
 ## Build
@@ -315,13 +315,13 @@ Type any expression supported by `the-calculator`. Enter `q` or `quit` to exit.
 
 ## Run with Spin (`thecalculatorspin`)
 
-`thecalculatorspin` is a Spin v4.1 HTTP application that exposes `the-calculator` as an HTTP endpoint. It uses the async `spin-sdk` 6 `#[http_service]` API while still targeting `wasm32-wasip2`, because no stable `wasm32-wasip3` Rust target exists yet.
+`thecalculatorspin` is built with Spin CLI v4.2.2 and exposes `the-calculator` as an HTTP endpoint. It keeps the async `spin-sdk` 6 `#[http_service]` API while still targeting `wasm32-wasip2`, because the current stable Rust toolchain has no distributed `wasm32-wasip3` standard library target and the latest released SpinKube shim still embeds the Spin 4.1 runtime.
 
 ### Prerequisites
 
 ```sh
-# Install Spin v4.1.0
-curl -fsSL https://spinframework.dev/downloads/install.sh | bash -s -- -v v4.1.0
+# Install Spin v4.2.2
+curl -fsSL https://spinframework.dev/downloads/install.sh | bash -s -- -v v4.2.2
 # or manually: https://github.com/spinframework/spin/releases
 
 # Install wac (WASM composition tool)
@@ -406,7 +406,7 @@ KEDA HTTP Add-on watches incoming request volume and scales the deployment betwe
 | [k3d](https://k3d.io) or [kind](https://kind.sigs.k8s.io) | k3d ≥ 5.0 / kind ≥ 0.20 | `brew install k3d` or `brew install kind` |
 | [kubectl](https://kubernetes.io/docs/tasks/tools/) | any | `brew install kubectl` |
 | [Helm](https://helm.sh) | ≥ 3.0 | `brew install helm` |
-| [Spin CLI](https://spinframework.dev/install) | 4.1.x | `curl -fsSL https://spinframework.dev/downloads/install.sh \| bash -s -- -v v4.1.0` |
+| [Spin CLI](https://spinframework.dev/install) | 4.2.x | `curl -fsSL https://spinframework.dev/downloads/install.sh \| bash -s -- -v v4.2.2` |
 | Docker (Docker Desktop / Rancher Desktop / OrbStack) | running | required by k3d |
 
 ### Deploy
@@ -475,8 +475,10 @@ CLUSTER_PROVIDER=kind bash deploy/thecalculatordepl/teardown.sh
 - **Pull credentials:** when `~/.docker/config.json` already contains working GHCR credentials, the k3d path reuses that file for the Kubernetes pull secret. This is more reliable than the GitHub CLI token for private package pulls.
 - **Re-deploying:** Re-run `deploy.sh` to push a new build and refresh the imagePullSecret, then `kubectl rollout restart deployment/thecalculatorspin`.
 - **min=1 (not 0):** The spin-operator reconciles `replicas: 1` from the SpinApp spec. Setting `min: 1` in the `HTTPScaledObject` keeps both controllers in agreement. True scale-to-zero would require removing the `replicas` field from the SpinApp and is not yet supported cleanly by spin-operator v0.6.1.
-- The upstream shim-specific k3d node image is no longer published. This repo now follows the supported SpinKube installation model: standard k3d nodes plus Runtime Class Manager installing shim **v0.25.1** (Spin 4.0.1) onto labeled nodes.
-- The repo now targets Spin CLI **4.1.0**, Spin shim **v0.25.1** (Spin 4.0.1), `spin-sdk` **6.0.0**, `wac-cli` **0.10.1**, and `componentize-py` **0.25.0**. The calculator components still target `wasm32-wasip2`; true `wasm32-wasip3` builds remain blocked on upstream toolchain support.
+- **Current k3d cluster version:** the existing in-place `uha-cluster` remains on K3s **v1.35.2+k3s1**. k3d's supported edit/update surface does not provide a node-image/K3s upgrade path for an existing cluster, so moving the running cluster to newer K3s releases would require a cluster replacement workflow outside this repo's no-recreate local upgrade path.
+- The upstream shim-specific k3d node image is no longer published. This repo now follows the supported SpinKube installation model: standard k3d nodes plus Runtime Class Manager installing shim **v0.26.0**. The latest released shim still embeds the Spin runtime from the `v4.1.0` line, even when the local build tooling uses Spin CLI **4.2.2**.
+- The repo now targets Spin CLI **4.2.2**, Spin shim **v0.26.0** (embedded Spin runtime **4.1.0**), `spin-sdk` **6.0.0**, `wac-cli` **0.10.1**, and `componentize-py` **0.25.0**. The calculator components still target `wasm32-wasip2`.
+- **WASI Preview 3 status:** a stable end-to-end migration is not yet possible in this repo. On the current stable Rust toolchain, `rustup target add wasm32-wasip3` fails because no prebuilt target artifacts are published, and a real `cargo build --target wasm32-wasip3` fails with `can't find crate for core` unless `-Zbuild-std` and extra target support are introduced. The generated .NET and Python components currently import `wasi:*@0.2.x`, confirming they remain Preview 2 components. A `spin-sdk` 7 / Spin CLI 4.2.2 build of `thecalculatorspin` also failed to stay healthy on the latest released shim runtime (`v0.26.0`, embedded Spin 4.1.0), so the app source remains on `spin-sdk` 6 until the released cluster runtime catches up.
 
 ## Deploy on kind (local Kubernetes)
 
@@ -500,7 +502,7 @@ The kind variant still uses the official [`containerd-shim-spin/kind`](https://g
 | [kind](https://kind.sigs.k8s.io) | ≥ 0.20 | `brew install kind` / [kind.sigs.k8s.io](https://kind.sigs.k8s.io/#installation-and-usage) |
 | [kubectl](https://kubernetes.io/docs/tasks/tools/) | any | `brew install kubectl` |
 | [Helm](https://helm.sh) | ≥ 3.0 | `brew install helm` |
-| [Spin CLI](https://spinframework.dev/install) | 4.1.x | `curl -fsSL https://spinframework.dev/downloads/install.sh \| bash -s -- -v v4.1.0` |
+| [Spin CLI](https://spinframework.dev/install) | 4.2.x | `curl -fsSL https://spinframework.dev/downloads/install.sh \| bash -s -- -v v4.2.2` |
 | Docker | running | required by kind |
 
 ### Deploy
@@ -514,7 +516,7 @@ bash deploy/thecalculatordepl-kind/deploy.sh
 The script performs these steps in order:
 
 1. **Push image** — by default, pushes the Spin app to a local OCI registry at `localhost:5001` (created automatically if needed), avoiding any GHCR token requirement on local kind setups. Set `REGISTRY_MODE=ghcr` to use the same `ghcr.io` flow as the other deploy variants.
-2. **Create cluster** — `uha-cluster` kind cluster from the shim-enabled node image (`ghcr.io/spinframework/containerd-shim-spin/kind:v0.25.1`), with `extraPortMappings` for host ports 3000→80 and 3443→443
+2. **Create cluster** — `uha-cluster` kind cluster from the shim-enabled node image (`ghcr.io/spinframework/containerd-shim-spin/kind:v0.26.0`), with `extraPortMappings` for host ports 3000→80 and 3443→443
 3. **Configure local registry access** — when using the default local registry mode, configures the kind node's containerd registry alias so Kubernetes can pull `localhost:5001/...` images successfully
 4. **Runtime Class Manager + shim** — labels the node, installs the shim, and ensures `wasmtime-spin-v2` is backed by a real `spin` runtime on the kind node
 5. **cert-manager**, **spin-operator**, **KEDA** + **KEDA HTTP Add-on** — same versions as the k3d script
@@ -547,7 +549,7 @@ bash deploy/thecalculatordepl-kind/teardown.sh
 
 ### Notes
 
-- Useful overrides: `REGISTRY_MODE` (`local` by default; set to `ghcr` to reuse the GitHub Container Registry flow), `LOCAL_REGISTRY_NAME` (default `kind-registry`), `LOCAL_REGISTRY_PORT` (default `5001`), `CLUSTER_NAME` (default `uha-cluster`), `KIND_NODE_IMAGE` (default `ghcr.io/spinframework/containerd-shim-spin/kind:v0.25.1`), `HOST_HTTP_PORT`/`HOST_HTTPS_PORT` (default `3000`/`3443`).
+- Useful overrides: `REGISTRY_MODE` (`local` by default; set to `ghcr` to reuse the GitHub Container Registry flow), `LOCAL_REGISTRY_NAME` (default `kind-registry`), `LOCAL_REGISTRY_PORT` (default `5001`), `CLUSTER_NAME` (default `uha-cluster`), `KIND_NODE_IMAGE` (default `ghcr.io/spinframework/containerd-shim-spin/kind:v0.26.0`), `HOST_HTTP_PORT`/`HOST_HTTPS_PORT` (default `3000`/`3443`).
 - This creates a cluster independent from any other kind clusters already running on the machine (kind context `kind-${CLUSTER_NAME}`) — it does not touch or reuse other clusters.
 - In the default local-registry mode, no image pull secret is needed; the kind node is configured to resolve `localhost:5001` to the registry container directly.
 - As with the k3d script, `min: 1` (not `0`) keeps spin-operator and the `HTTPScaledObject` in agreement — true scale-to-zero is not yet supported cleanly by spin-operator v0.6.1.

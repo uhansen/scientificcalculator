@@ -20,7 +20,7 @@ IMAGE="${IMAGE:-$(
 source "${REPO_ROOT}/deploy/lib/spinkube-common.sh"
 
 CLUSTER_NAME="${CLUSTER_NAME:-uha-cluster}"
-KIND_NODE_IMAGE="${KIND_NODE_IMAGE:-ghcr.io/spinframework/containerd-shim-spin/kind:v0.25.1}"
+KIND_NODE_IMAGE="${KIND_NODE_IMAGE:-ghcr.io/spinframework/containerd-shim-spin/kind:v0.26.0}"
 HOST_HTTP_PORT="${HOST_HTTP_PORT:-3000}"
 HOST_HTTPS_PORT="${HOST_HTTPS_PORT:-3443}"
 KIND_CONFIG_FILE="${KIND_CONFIG_FILE:-${SCRIPT_DIR}/kind-config.yaml}"

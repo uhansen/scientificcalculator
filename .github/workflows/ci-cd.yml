@@ -15,7 +15,7 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE: ghcr.io/uhansen/thecalculatorspin
-  SPIN_VERSION: "4.1.0"
+  SPIN_VERSION: "4.2.2"
   WAC_VERSION: "0.10.1"
 
 jobs:
