@@ -10,6 +10,7 @@ world the-calculator {
     import buildbyhansen:euclidian-calculator/moddiv@0.1.0;
     import buildbyhansen:logaritmic-calculator/logaritmic@0.1.0;
     import buildbyhansen:statistics-calculator/statistics@0.1.0;
+    import buildbyhansen:complex-calculator/complex@0.1.0;
 
     export calculator;
 }

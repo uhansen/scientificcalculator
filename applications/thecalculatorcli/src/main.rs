@@ -10,6 +10,7 @@ fn main() {
     println!("Scientific Calculator — type 'q' to quit");
     println!("Supported: add  subtract  multiply  divide  sin  cos  tan  arctan");
     println!("           mod  div  e  ln  sum  avg");
+    println!("           cadd(re1,im1,re2,im2) — complex addition");
     println!();
 
     loop {

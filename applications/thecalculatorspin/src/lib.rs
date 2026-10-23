@@ -28,7 +28,8 @@ async fn handle(req: Request) -> Result<impl IntoResponse> {
              - sin(30)     cos(45)           tan(60)          arctan(1)\n\
              - mod(10,3)   div(10,3)\n\
              - e()         ln(2.718)\n\
-             - sum(1,2,3)  avg(4,5,6)\n",
+             - sum(1,2,3)  avg(4,5,6)\n\
+             - cadd(1,2,3,4)  -> 4+6i (complex addition)\n",
         ));
     }
 

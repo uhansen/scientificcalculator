@@ -6,6 +6,7 @@ wit_bindgen::generate!({
 });
 
 use buildbyhansen::arithmetic_calculator::arithmetic as arith;
+use buildbyhansen::complex_calculator::complex as cx;
 use buildbyhansen::logaritmic_calculator::logaritmic as log;
 use buildbyhansen::euclidian_calculator::moddiv as md;
 use buildbyhansen::statistics_calculator::statistics as stats;
@@ -118,6 +119,21 @@ fn parse_and_dispatch(expr: &str) -> Result<String, String> {
                 return Err("avg requires at least one number".into());
             }
             stats::avg(&args).to_string()
+        }
+
+        "cadd" => {
+            need(&args, 4, "cadd")?;
+            let result = cx::add(
+                cx::ComplexNumber {
+                    re: args[0],
+                    im: args[1],
+                },
+                cx::ComplexNumber {
+                    re: args[2],
+                    im: args[3],
+                },
+            );
+            format!("{}{:+}i", result.re, result.im)
         }
 
         other => return Err(format!("Unknown function: '{other}'")),

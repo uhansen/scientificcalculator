@@ -1,0 +1,14 @@
+package buildbyhansen:complex-calculator@0.1.0;
+
+interface complex {
+    record complex-number {
+        re: f64,
+        im: f64,
+    }
+
+    add: func(a: complex-number, b: complex-number) -> complex-number;
+}
+
+world complex-calculator {
+    export complex;
+}

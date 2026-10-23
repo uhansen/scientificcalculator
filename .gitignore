@@ -1,4 +1,5 @@
 /target
+components/complex-calculator/*.wasm
 components/moddiv-calculator/node_modules
 components/moddiv-calculator/moddiv-calculator.js
 components/moddiv-calculator/moddiv-calculator.wasm

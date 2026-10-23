@@ -1,6 +1,6 @@
 # Scientific Calculator – WASM Components
 
-WebAssembly components built in Rust, TypeScript, C#, and Python, following the [Bytecode Alliance guides](https://component-model.bytecodealliance.org/language-support/).
+WebAssembly components built in Rust, TypeScript, C#, Python, and hand-written WAT, following the [Bytecode Alliance guides](https://component-model.bytecodealliance.org/language-support/).
 
 | Component | Language | Interface |
 |---|---|---|
@@ -9,13 +9,14 @@ WebAssembly components built in Rust, TypeScript, C#, and Python, following the 
 | `euclidian-calculator` | TypeScript | `mod` `div` |
 | `logaritmic-calculator` | C# / .NET 10 | `e` `ln` |
 | `statistics-calculator` | Python | `sum` `avg` |
-| `the-calculator` | Composed (all 5) | `calculate(string) → string` |
+| `complex-calculator` | WAT (no guest-language compiler) | `add` on complex-number records |
+| `the-calculator` | Composed (all 6) | `calculate(string) → string` |
 | `thecalculatorspin` | Rust (Spin HTTP app) | HTTP API wrapping `the-calculator` |
 
 ## Components
 
-### `the-calculator` (Rust shell — composed from all five sub-components)
-A composed WASM component that bundles all five calculators into a single binary.
+### `the-calculator` (Rust shell — composed from all six sub-components)
+A composed WASM component that bundles all six calculators into a single binary.
 Exports the `buildbyhansen:the-calculator/calculator@0.1.0` interface with one method:
 
 ```
@@ -31,6 +32,7 @@ Accepts function-call style expressions and routes them to the correct sub-compo
 | `mod(7,3)` `div(7,3)` | euclidian-calculator |
 | `e()` `ln(2.718)` | logaritmic |
 | `sum(1,2,3)` `avg(1,2,3,4)` | statistics |
+| `cadd(1,2,3,4)` → `4+6i` | complex (real/imaginary parts of two operands) |
 
 ### `arithmetic-calculator` (Rust, wasm32-wasip2)
 Exports an `arithmetic` interface with:
@@ -61,6 +63,32 @@ Exports a `statistics` interface with:
 - `sum(numbers: list<f64>) -> f64` — sum of a list of numbers
 - `avg(numbers: list<f64>) -> f64` — arithmetic mean (returns 0.0 for empty list)
 
+### `complex-calculator` (hand-written WAT)
+Exports `buildbyhansen:complex-calculator/complex@0.1.0`:
+
+```wit
+record complex-number {
+    re: f64,
+    im: f64,
+}
+add: func(a: complex-number, b: complex-number) -> complex-number;
+```
+
+Both implementations are written directly in WebAssembly text, without generating Rust or another guest language:
+
+- `components/complex-calculator/complex.core.wat`: a core module, wrapped with `wasm-tools component embed` and `component new`. This variant is composed into `the-calculator`.
+- `components/complex-calculator/complex.component.wat`: a complete `(component ...)` with a hand-written record type, interface instance, and `canon lift`, assembled with `wasm-tools parse`.
+
+The Canonical ABI flattens the two input records to four `f64` parameters. The result has two fields, exceeding the single flat-result limit, so the core function writes `re` and `im` at offsets 0 and 8 in a static, 8-byte-aligned, 16-byte return area and returns its `i32` pointer. The lift reads the fields from exported memory. There are no strings, lists, imports, or dynamic allocations, so no `realloc`, initialization, or post-return hook is needed. Arithmetic uses two `f64.add` instructions with normal IEEE 754 behavior (including infinities and NaNs).
+
+Variant A explicitly uses legacy export names (`memory` and `buildbyhansen:complex-calculator/complex@0.1.0#add`), rather than relying on the tool's default dummy-name scheme. To inspect the corresponding ABI template:
+
+```sh
+wasm-tools component embed components/complex-calculator/wit/world.wit --dummy-names legacy -t
+```
+
+The dummy template includes generic allocator and cleanup stubs; this implementation does not need them. The `--dummy-names` option already implies `--dummy`; do not combine the two flags.
+
 ### `thecalculatorspin` (Rust, Spin 4.2 build tooling)
 An HTTP application built with [Spin](https://spinframework.dev) that wraps `the-calculator` and exposes it over HTTP. It continues to use the async `spin-sdk` 6 `#[http_service]` model so it stays compatible with the latest released SpinKube shim runtime, while the local build tooling and CI use Spin CLI 4.2.2. Send a GET request with an `?calculate=` query parameter; the result is returned as plain text.
 
@@ -69,7 +97,7 @@ An interactive command-line REPL that imports `the-calculator` via WIT and is co
 
 ## Prerequisites
 
-Install the tools required for the languages you want to build. All five are needed to compose `the-calculator`.
+Install the tools required for the languages you want to build. All six sub-components are needed to compose `the-calculator`.
 
 ### All components
 ```sh
@@ -98,6 +126,9 @@ Requires Python 3.10+ and `componentize-py`:
 pip install componentize-py==0.25.0
 ```
 
+### `complex-calculator` (WAT)
+Requires `wasm-tools` and [Wasmtime](https://wasmtime.dev/) for the executable checks. CI pins wasm-tools 1.244.0 and Wasmtime 41.0.3; no guest-language compiler or WASI adapter is needed.
+
 ### `thecalculatorspin` (Spin HTTP app)
 Requires [Spin 4.2+](https://spinframework.dev/install) in addition to the Rust toolchain and `wac-cli` listed above:
 ```sh
@@ -107,7 +138,7 @@ curl -fsSL https://spinframework.dev/downloads/install.sh | bash -s -- -v v4.2.2
 
 ## Build
 
-The five sub-components must be built before the composed `the-calculator` binary can be produced. Follow steps 1–5 in order, then run the composition in step 6.
+The six sub-components must be built before the composed `the-calculator` binary can be produced. Follow steps 1–6 in order, then run the composition in step 7.
 
 ### Step 1 — Rust: arithmetic-calculator, trigonometric-calculator, and the-calculator shell
 
@@ -163,7 +194,29 @@ cd ../..
 
 Output: `components/statistics-calculator/statistics-calculator.wasm`
 
-### Step 5 — Verify sub-components (optional)
+### Step 5 — WAT: complex-calculator (both variants)
+
+```sh
+components/complex-calculator/build.sh
+```
+
+The script runs these assembly commands, then validates both components and checks their WIT against a dummy component derived from `wit/world.wit`. Executable checks cover positive, negative, fractional, zero, infinite, and NaN inputs:
+
+```sh
+cd components/complex-calculator
+wasm-tools component embed wit/world.wit complex.core.wat -o complex.core.wasm
+wasm-tools component new complex.core.wasm -o complex-calculator.wasm
+wasm-tools parse complex.component.wat -o complex-calculator.component.wasm
+wasmtime run --invoke 'add({re: 1, im: 2}, {re: 3, im: 4})' complex-calculator.wasm
+# → {re: 4, im: 6}
+wasmtime run --invoke 'add({re: 1, im: 2}, {re: 3, im: 4})' complex-calculator.component.wasm
+# → {re: 4, im: 6}
+cd ../..
+```
+
+Outputs: `components/complex-calculator/complex-calculator.wasm` (primary) and `complex-calculator.component.wasm` (direct component WAT). Generated binaries in this directory are ignored by Git.
+
+### Step 6 — Verify sub-components (optional)
 
 Confirm each sub-component exports the expected interface:
 
@@ -173,11 +226,13 @@ wasm-tools component wit target/wasm32-wasip2/release/trigonometric_calculator.w
 wasm-tools component wit components/euclidian-calculator/euclidian-calculator.wasm
 wasm-tools component wit components/logaritmic-calculator/bin/Release/net10.0/wasi-wasm/publish/logaritmic-calculator.wasm
 wasm-tools component wit components/statistics-calculator/statistics-calculator.wasm
+wasm-tools component wit components/complex-calculator/complex-calculator.wasm
+wasm-tools component wit components/complex-calculator/complex-calculator.component.wasm
 ```
 
-### Step 6 — Compose: the-calculator
+### Step 7 — Compose: the-calculator
 
-`wac plug` wires the exports of each sub-component into the matching imports of the shell, producing a fully self-contained binary. All five sub-components are embedded; only WASI host imports remain external.
+`wac plug` wires the exports of each sub-component into the matching imports of the shell, producing a fully self-contained binary. All six sub-components are embedded; only WASI host imports remain external.
 
 ```sh
 wac plug \
@@ -186,6 +241,7 @@ wac plug \
   --plug components/euclidian-calculator/euclidian-calculator.wasm \
   --plug components/logaritmic-calculator/bin/Release/net10.0/wasi-wasm/publish/logaritmic-calculator.wasm \
   --plug components/statistics-calculator/statistics-calculator.wasm \
+  --plug components/complex-calculator/complex-calculator.wasm \
   target/wasm32-wasip2/release/the_calculator.wasm \
   -o components/the-calculator/the-calculator.wasm
 ```
@@ -198,7 +254,19 @@ Verify the composed component exposes only the single `calculate` export and no 
 wasm-tools component wit components/the-calculator/the-calculator.wasm | grep -E "^  (import|export)"
 ```
 
-### Step 7 — Build and run: thecalculatorspin
+Exercise both WAT variants and the composed calculator (including existing scalar functions):
+
+```sh
+components/complex-calculator/test.sh --composed
+wasmtime run --invoke 'calculate("cadd(1,2,3,4)")' components/the-calculator/the-calculator.wasm
+# → "4+6i"
+wasmtime run --invoke 'calculate("cadd(1,-2,3,-4)")' components/the-calculator/the-calculator.wasm
+# → "4-6i"
+```
+
+`cadd` requires exactly four numeric arguments, ordered `re1, im1, re2, im2`; malformed input uses the existing `Error: ...` response format. Existing `add` still adds two real numbers.
+
+### Step 8 — Build and run: thecalculatorspin
 
 ```sh
 cd applications/thecalculatorspin
@@ -297,6 +365,7 @@ Example session:
 Scientific Calculator — type 'q' to quit
 Supported: add  subtract  multiply  divide  sin  cos  tan  arctan
            mod  div  e  ln  sum  avg
+           cadd(re1,im1,re2,im2) — complex addition
 
 calculate: add(2,2)
 4
@@ -306,6 +375,8 @@ calculate: sin(30)
 0.49999999999999994
 calculate: sum(1,2,3,4,5)
 15
+calculate: cadd(1,2,3,4)
+4+6i
 calculate: q
 ```
 
@@ -382,6 +453,10 @@ curl "http://127.0.0.1:3000/?calculate=ln(2.718281828)"  # → ~1
 # Statistics
 curl "http://127.0.0.1:3000/?calculate=sum(1,2,3,4,5)"  # → 15
 curl "http://127.0.0.1:3000/?calculate=avg(1,2,3,4,5)"  # → 3
+
+# Complex addition: (re1 + im1*i) + (re2 + im2*i)
+curl "http://127.0.0.1:3000/?calculate=cadd(1,2,3,4)"   # → 4+6i
+curl "http://127.0.0.1:3000/?calculate=cadd(1,-2,3,-4)" # → 4-6i
 ```
 
 ## Deploy on k3d or kind / SpinKube (local Kubernetes)
@@ -882,7 +957,7 @@ Telekom-specific notes:
 | `components/logaritmic-calculator/bin/Release/net10.0/wasi-wasm/publish/logaritmic-calculator.wasm` | 2.5 MB | C# / .NET 10 |
 | `components/euclidian-calculator/euclidian-calculator.wasm` | 12 MB | TypeScript — embeds StarlingMonkey JS engine |
 | `components/statistics-calculator/statistics-calculator.wasm` | 18 MB | Python — embeds CPython runtime |
-| `components/the-calculator/the-calculator.wasm` | 32 MB | Composed: all 5 sub-components bundled |
+| `components/the-calculator/the-calculator.wasm` | 32 MB | Composed: all 6 sub-components bundled |
 | `applications/thecalculatorspin/thecalculatorspin-composed.wasm` | 32 MB | Composed Spin app (Spin shell + the-calculator) |
 | `applications/thecalculatorcli/thecalculatorcli-composed.wasm` | 32 MB | Composed CLI REPL (CLI shell + the-calculator) |
 
