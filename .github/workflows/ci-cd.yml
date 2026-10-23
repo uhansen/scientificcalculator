@@ -17,6 +17,8 @@ env:
   IMAGE: ghcr.io/uhansen/thecalculatorspin
   SPIN_VERSION: "4.2.2"
   WAC_VERSION: "0.10.1"
+  WASM_TOOLS_VERSION: "1.244.0"
+  WASMTIME_VERSION: "41.0.3"
 
 jobs:
   build-and-push:
@@ -117,6 +119,41 @@ jobs:
           chmod +x "${HOME}/.cargo/bin/wac"
           "${HOME}/.cargo/bin/wac" --version
 
+      # ── WAT build and test tools ──────────────────────────────────────────
+      - name: Cache WAT tools
+        id: cache-wat-tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/wasm-tools
+            ~/.cargo/bin/wasmtime
+          key: wat-tools-${{ runner.os }}-${{ runner.arch }}-${{ env.WASM_TOOLS_VERSION }}-${{ env.WASMTIME_VERSION }}
+
+      - name: Install WAT tools
+        if: steps.cache-wat-tools.outputs.cache-hit != 'true'
+        run: |
+          case "$(uname -m)" in
+            x86_64) ARCH="x86_64" ;;
+            aarch64|arm64) ARCH="aarch64" ;;
+            *)
+              echo "Unsupported runner architecture: $(uname -m)" >&2
+              exit 1
+              ;;
+          esac
+          mkdir -p "${RUNNER_TEMP}/wasm-tools" "${RUNNER_TEMP}/wasmtime"
+          curl -fsSL \
+            "https://github.com/bytecodealliance/wasm-tools/releases/download/v${WASM_TOOLS_VERSION}/wasm-tools-${WASM_TOOLS_VERSION}-${ARCH}-linux.tar.gz" \
+            -o "${RUNNER_TEMP}/wasm-tools.tar.gz"
+          tar -xzf "${RUNNER_TEMP}/wasm-tools.tar.gz" --strip-components=1 -C "${RUNNER_TEMP}/wasm-tools"
+          install -m 755 "${RUNNER_TEMP}/wasm-tools/wasm-tools" "${HOME}/.cargo/bin/wasm-tools"
+          curl -fsSL \
+            "https://github.com/bytecodealliance/wasmtime/releases/download/v${WASMTIME_VERSION}/wasmtime-v${WASMTIME_VERSION}-${ARCH}-linux.tar.xz" \
+            -o "${RUNNER_TEMP}/wasmtime.tar.xz"
+          tar -xJf "${RUNNER_TEMP}/wasmtime.tar.xz" --strip-components=1 -C "${RUNNER_TEMP}/wasmtime"
+          install -m 755 "${RUNNER_TEMP}/wasmtime/wasmtime" "${HOME}/.cargo/bin/wasmtime"
+          wasm-tools --version
+          wasmtime --version
+
       # ── Spin ──────────────────────────────────────────────────────────────
       - name: Cache Spin binary
         id: cache-spin
@@ -152,6 +189,9 @@ jobs:
             componentize app \
             -o statistics-calculator.wasm
 
+      - name: Build and test WAT complex-calculator
+        run: components/complex-calculator/build.sh
+
       # ── Compose the-calculator ─────────────────────────────────────────────
       - name: Compose the-calculator
         run: |
@@ -161,8 +201,12 @@ jobs:
             --plug components/euclidian-calculator/euclidian-calculator.wasm \
             --plug components/logaritmic-calculator/bin/Release/net10.0/wasi-wasm/publish/logaritmic-calculator.wasm \
             --plug components/statistics-calculator/statistics-calculator.wasm \
+            --plug components/complex-calculator/complex-calculator.wasm \
             target/wasm32-wasip2/release/the_calculator.wasm \
             -o components/the-calculator/the-calculator.wasm
+
+      - name: Test composed calculator
+        run: components/complex-calculator/test.sh --composed
 
       # ── Build Spin app ─────────────────────────────────────────────────────
       - name: Build Spin app (thecalculatorspin)
