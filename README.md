@@ -13,6 +13,23 @@ WebAssembly components built in Rust, TypeScript, C#, Python, and hand-written W
 | `the-calculator` | Composed (all 6) | `calculate(string) → string` |
 | `thecalculatorspin` | Rust (Spin HTTP app) | HTTP API wrapping `the-calculator` |
 
+## Latest addition: complex arithmetic without a guest-language compiler
+
+The sixth sub-component, [`complex-calculator`](components/complex-calculator/), implements `(a + bi) + (c + di)` directly in WAT. Compare the [core-module implementation](components/complex-calculator/complex.core.wat) with the [complete component implementation](components/complex-calculator/complex.component.wat); both export the same WIT record-based interface.
+
+The composed calculator exposes it as `cadd(re1,im1,re2,im2)`. Both the CLI and Spin app use the updated calculator through their existing `calculate(string) -> string` interface:
+
+```sh
+# Interactive CLI: enter cadd(1,2,3,4) at the prompt to get 4+6i
+wasmtime run applications/thecalculatorcli/thecalculatorcli-composed.wasm
+
+# Spin HTTP app, either running directly or deployed on the laptop cluster
+curl 'http://localhost:3000/?calculate=cadd(1,2,3,4)'
+# → 4+6i
+```
+
+See [the build instructions](#step-5--wat-complex-calculator-both-variants) for assembling both WAT variants, and the [blog walkthrough](blogpost.md#writing-a-component-directly-in-wat) for the Canonical ABI explanation. Complex arithmetic currently supports addition only; ordinary `add(2,3)` remains unchanged.
+
 ## Components
 
 ### `the-calculator` (Rust shell — composed from all six sub-components)
@@ -93,7 +110,7 @@ The dummy template includes generic allocator and cleanup stubs; this implementa
 An HTTP application built with [Spin](https://spinframework.dev) that wraps `the-calculator` and exposes it over HTTP. It continues to use the async `spin-sdk` 6 `#[http_service]` model so it stays compatible with the latest released SpinKube shim runtime, while the local build tooling and CI use Spin CLI 4.2.2. Send a GET request with an `?calculate=` query parameter; the result is returned as plain text.
 
 ### `thecalculatorcli` (Rust, WASI CLI)
-An interactive command-line REPL that imports `the-calculator` via WIT and is composed with it using `wac`. Run with `wasmtime run` for an interactive calculator prompt.
+An interactive command-line REPL that imports `the-calculator` via WIT and is composed with it using `wac`. Run with `wasmtime run` for an interactive calculator prompt, including `cadd(re1,im1,re2,im2)`.
 
 ## Prerequisites
 
@@ -473,6 +490,8 @@ curl localhost:3000
 ```
 
 KEDA HTTP Add-on watches incoming request volume and scales the deployment between 1 and 5 replicas. After 60 s of inactivity, replicas return to 1.
+
+The complex-addition update has also been deployed to the laptop's existing k3d cluster and exercised through `http://localhost:3000/?calculate=cadd(1,2,3,4)`. That deployment uses its existing local OCI registry because the laptop's GHCR token lacked package-write permission. This is separate from the shared k3d script's GHCR publishing path: an existing local registry needs an HTTP endpoint configured in containerd on each node, and the SpinApp should reference the pushed image by digest. The kind deployment pack below automates its own local-registry setup.
 
 ### Prerequisites
 

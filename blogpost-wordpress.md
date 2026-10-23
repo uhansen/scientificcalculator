@@ -12,6 +12,7 @@
 - [Node.js 22](https://nodejs.org/) and [npm](https://www.npmjs.com/get-npm) for the TypeScript component
 - [Python 3.12](https://www.python.org/downloads/) and [`componentize-py`](https://github.com/bytecodealliance/componentize-py) for the Python component
 - [`wac-cli`](https://github.com/bytecodealliance/wac) for composing the WebAssembly components
+- [`wasm-tools`](https://github.com/bytecodealliance/wasm-tools) 1.244.0 and [Wasmtime](https://wasmtime.dev/) 41.0.3 (the CI-pinned versions) for assembling and checking the hand-written WAT component
 - [`spin`](https://developer.fermyon.com/spin/install) and the Spin registry tooling for building and publishing the app
 - [`spinkube`](https://spinkube.dev/docs/install/) for running Spin applications on Kubernetes
 - [`k3d`](https://k3d.io/stable/#installation) and [`kubectl`](https://kubernetes.io/docs/tasks/tools/) for creating a local Kubernetes cluster and deploying the application
@@ -98,6 +99,87 @@ Language toolchains (`wit-bindgen` for Rust, `jco` for TypeScript/JavaScript, `c
 
 The result is a component that is self-describing: its binary carries the full WIT interface, which any tool can read with `wasm-tools component wit my-component.wasm`.
 
+## Writing a Component Directly in WAT
+
+A guest-language compiler is not a requirement. The newest calculator component adds two complex numbers using hand-written WebAssembly text (WAT), with no Rust, C#, JavaScript, or Python implementation behind it.
+
+Its contract lives in `components/complex-calculator/wit/world.wit`:
+
+```wit
+package buildbyhansen:complex-calculator@0.1.0;
+
+interface complex {
+    record complex-number {
+        re: f64,
+        im: f64,
+    }
+    add: func(a: complex-number, b: complex-number) -> complex-number;
+}
+
+world complex-calculator {
+    export complex;
+}
+```
+
+WIT specifies the types, not the implementation. To discover the core signatures and legacy export names expected by the Canonical ABI, inspect a dummy module:
+
+```sh
+wasm-tools component embed components/complex-calculator/wit/world.wit \
+  --dummy-names legacy -t
+```
+
+`--dummy-names legacy` already implies dummy generation; do not combine it with `--dummy`. The dummy function traps and is only a template, not the calculator implementation.
+
+### From core-module WAT to a component
+
+Each input record flattens into two `f64` values, so `add` takes four core parameters. Its result also has two fields, exceeding the Canonical ABI's single flat-result limit. The function therefore writes a 16-byte record into linear memory and returns its `i32` address:
+
+```wat
+(module
+  (memory (export "memory") 1)
+  (func (export "buildbyhansen:complex-calculator/complex@0.1.0#add")
+    (param $a-re f64) (param $a-im f64)
+    (param $b-re f64) (param $b-im f64)
+    (result i32)
+    (f64.store (i32.const 0)
+      (f64.add (local.get $a-re) (local.get $b-re)))
+    (f64.store offset=8 (i32.const 0)
+      (f64.add (local.get $a-im) (local.get $b-im)))
+    (i32.const 0)))
+```
+
+The static return area is 8-byte aligned: `re` is at offset 0 and `im` at offset 8. There are no dynamically allocated values, so this implementation needs neither an allocator nor post-return cleanup. The exported memory lets the canonical lift read the result.
+
+Starting at the repository root:
+
+```sh
+cd components/complex-calculator
+wasm-tools component embed wit/world.wit complex.core.wat -o complex.core.wasm
+wasm-tools component new complex.core.wasm -o complex-calculator.wasm
+wasm-tools validate complex-calculator.wasm
+wasm-tools component wit complex-calculator.wasm
+wasmtime run --invoke 'add({re: 1, im: 2}, {re: 3, im: 4})' complex-calculator.wasm
+# → {re: 4, im: 6}
+cd ../..
+```
+
+### A complete component written in WAT
+
+The alternative [`complex.component.wat`](components/complex-calculator/complex.component.wat) also writes the component layer by hand: it instantiates a core module, declares the record and function types, uses `canon lift` with the core memory, and exports the versioned `complex` interface instance. It skips `component embed` and `component new` entirely:
+
+```sh
+cd components/complex-calculator
+wasm-tools parse complex.component.wat -o complex-calculator.component.wasm
+wasm-tools validate complex-calculator.component.wasm
+wasmtime run --invoke 'add({re: 1, im: 2}, {re: 3, im: 4})' complex-calculator.component.wasm
+# → {re: 4, im: 6}
+cd ../..
+```
+
+Run `components/complex-calculator/build.sh` to build both variants, compare their extracted interfaces against a WIT-derived dummy component, and exercise positive, negative, fractional, zero, infinite, and NaN inputs. The core-module variant is the one composed into `the-calculator`.
+
+This is a deliberately small example: two `f64.add` instructions demonstrate the arithmetic, while the record result demonstrates the Canonical ABI's indirect return convention. Strings, lists, and resources would require more ABI machinery.
+
 ---
 
 ## Composition
@@ -108,14 +190,15 @@ Rather than calling an HTTP endpoint or linking shared libraries at compile time
 
 ### How it works
 
-Consider a system with five sub-components — each written in a different language — and a shell component that imports all five:
+Consider a system with six sub-components — implemented in Rust, TypeScript, C#, Python, and direct WAT — and a shell component that imports all six:
 
 ```
 arithmetic-calculator (Rust)       ─┐
 trigonometric-calculator (Rust)    ─┤
-moddiv-calculator (TypeScript)                ─┼──► the-calculator (Rust shell)
-logaritmic-calculator (C#)         ─┤
-statistics-calculator (Python)     ─┘
+euclidian-calculator (TypeScript)  ─┤
+logaritmic-calculator (C#)         ─┼──► the-calculator (Rust shell)
+statistics-calculator (Python)    ─┤
+complex-calculator (WAT)           ─┘
 ```
 
 The shell declares its imports in WIT:
@@ -124,9 +207,10 @@ The shell declares its imports in WIT:
 world the-calculator {
     import buildbyhansen:arithmetic-calculator/arithmetic@0.1.0;
     import buildbyhansen:trigonometric-calculator/trigonometric@0.1.0;
-    import buildbyhansen:moddiv-calculator/moddiv@0.1.0;
+    import buildbyhansen:euclidian-calculator/moddiv@0.1.0;
     import buildbyhansen:logaritmic-calculator/logaritmic@0.1.0;
     import buildbyhansen:statistics-calculator/statistics@0.1.0;
+    import buildbyhansen:complex-calculator/complex@0.1.0;
 
     export buildbyhansen:the-calculator/calculator@0.1.0;
 }
@@ -138,14 +222,15 @@ The `wac plug` tool resolves each import by matching it against the exports of t
 wac plug \
   --plug arithmetic_calculator.wasm \
   --plug trigonometric_calculator.wasm \
-  --plug moddiv-calculator.wasm \
+  --plug euclidian-calculator.wasm \
   --plug logaritmic-calculator.wasm \
   --plug statistics-calculator.wasm \
+  --plug complex-calculator.wasm \
   the_calculator.wasm \
   -o the-calculator.wasm
 ```
 
-The composed output has no sub-component imports left — only WASI host APIs remain external. Five separate binaries, written in four different languages, become one.
+The composed output has no sub-component imports left — only WASI host APIs remain external. Six separate binaries, implemented in four guest languages plus direct WAT, become one. The shell maps `cadd(re1,im1,re2,im2)` to the record-based `complex.add` export and formats the result as `4+6i` or `4-6i`; ordinary real-number `add` is unchanged.
 
 ### Why this matters
 
@@ -167,11 +252,13 @@ A component that implements `buildbyhansen:arithmetic-calculator/arithmetic@0.1.
 
 The Component Model is still evolving. The specification is largely stable, the major toolchains have solid support, and runtimes like Wasmtime implement it in production. But the registry ecosystem, async support (WASI 0.3), and debugger integration are still maturing.
 
-What exists today is already enough to build real, multi-language systems. The scientific calculator in this repository is a small but concrete example: five components in Rust, TypeScript, C#, and Python, each independently buildable and verifiable, composed into a single binary with a single entry point, runnable with a one-liner:
+What exists today is already enough to build real, multi-language systems. The scientific calculator in this repository is a small but concrete example: six components in Rust, TypeScript, C#, Python, and hand-written WAT, each independently buildable and verifiable, composed into a single binary with a single entry point, runnable with a one-liner:
 
 ```sh
 wasmtime run --invoke 'calculate("add(2,2)")' components/the-calculator/the-calculator.wasm
 # → "4"
+wasmtime run --invoke 'calculate("cadd(1,2,3,4)")' components/the-calculator/the-calculator.wasm
+# → "4+6i"
 ```
 
 The promise of WebAssembly was always portability. The Component Model extends that promise from *run anywhere* to *compose with anything*.
@@ -203,6 +290,7 @@ fn main() {
     println!("Scientific Calculator — type 'q' to quit");
     println!("Supported: add  subtract  multiply  divide  sin  cos  tan  arctan");
     println!("           mod  div  e  ln  sum  avg");
+    println!("           cadd(re1,im1,re2,im2) — complex addition");
     println!();
 
     loop {
@@ -248,6 +336,7 @@ Example session:
 Scientific Calculator — type 'q' to quit
 Supported: add  subtract  multiply  divide  sin  cos  tan  arctan
            mod  div  e  ln  sum  avg
+           cadd(re1,im1,re2,im2) — complex addition
 
 calculate: add(2,2)
 4
@@ -257,6 +346,8 @@ calculate: sin(30)
 0.49999999999999994
 calculate: sum(1,2,3,4,5)
 15
+calculate: cadd(1,2,3,4)
+4+6i
 calculate: q
 ```
 
@@ -297,9 +388,10 @@ HTTP request
              │  (composed in by wac plug)
              ▼
 ┌────────────────────────────────────────┐
-│  the-calculator.wasm                   │  ← composed component (5 sub-components)
-│  arithmetic · trig · moddiv-calculator │
+│  the-calculator.wasm                   │  ← composed component (6 sub-components)
+│  arithmetic · trig · euclidian         │
 │  logarithmic · statistics              │
+│  complex (hand-written WAT)            │
 └────────────────────────────────────────┘
 ```
 
@@ -391,15 +483,19 @@ curl "http://127.0.0.1:3000/?calculate=ln(2.718281828)"  # → ~1
 # Statistics
 curl "http://127.0.0.1:3000/?calculate=sum(1,2,3,4,5)"  # → 15
 curl "http://127.0.0.1:3000/?calculate=avg(1,2,3,4,5)"  # → 3
+
+# Complex addition: re1, im1, re2, im2
+curl "http://127.0.0.1:3000/?calculate=cadd(1,2,3,4)"   # → 4+6i
+curl "http://127.0.0.1:3000/?calculate=cadd(1,-2,3,-4)" # → 4-6i
 ```
 
 ### What this demonstrates
 
 A few things stand out about this workflow:
 
-**WASM composition scales to real services.** The same `wac plug` command used to compose five calculator sub-components is used again here — this time to embed a 32 MB composed binary inside a Spin HTTP handler. The mechanism is identical.
+**WASM composition scales to real services.** The same `wac plug` command used to compose six calculator sub-components is used again here — this time to embed a 32 MB composed binary inside a Spin HTTP handler. The mechanism is identical.
 
-**The interface contract is the API.** The Spin handler doesn't know that `the-calculator` is made of Rust, TypeScript, C#, and Python. It sees one WIT interface: `calculate(string) → string`. Language implementation details are invisible at composition time.
+**The interface contract is the API.** The Spin handler doesn't know that `the-calculator` is made of Rust, TypeScript, C#, Python, and direct WAT. It sees one WIT interface: `calculate(string) → string`. Language implementation details are invisible at composition time.
 
 **Cold start is fast.** Because WebAssembly modules are pre-compiled and sandboxed, Spin can instantiate the component per-request with very low overhead — no JVM startup, no Python interpreter initialization on the hot path.
 
@@ -432,6 +528,8 @@ The Spin app is packaged as an OCI image and pushed to GitHub Container Registry
 ```sh
 spin registry push ghcr.io/uhansen/thecalculatorspin:latest
 ```
+
+The latest complex-addition build was also rolled out on the laptop's existing k3d cluster and verified at `http://localhost:3000/?calculate=cadd(1,2,3,4)`. GHCR rejected the laptop's token for missing package-write scope, so that deployment used its existing local OCI registry instead. Containerd was configured with the registry's HTTP endpoint on each node, and the SpinApp was pinned to the pushed image digest. This local update did not reinstall the Kubernetes stack; the shared k3d deployment script still uses GHCR.
 
 The deploy script (`deploy/thecalculatordepl/deploy.sh`) performs all ten steps in order — cluster creation, cert-manager, spin-operator, RuntimeClass, KEDA, KEDA HTTP Add-on, SpinApp, HTTPScaledObject, and a Traefik patch for ExternalName services — with a single command:
 
@@ -639,7 +737,7 @@ After the test finishes, KEDA's idle timer fires after 60 seconds and the replic
 ╚══════════════════════════════════════════════════════════╝
 ```
 
-Zero errors. The composed WASM binary — five sub-components, four languages, 32 MB — handles sustained concurrent HTTP load without issue.
+Zero errors in this earlier five-component, four-language run. These historical load-test numbers are not a new benchmark of the six-component build. The WAT addition has executable checks and CLI/HTTP verification, but the load test has not been repeated for it.
 
 ---
 
@@ -660,13 +758,16 @@ push to topic/my-feature
 │     Rust 1.93  · wasm32-wasip2  │
 │     .NET 10    · Node 22        │
 │     Python 3.12· componentize   │
-│     wac-cli    · Spin 3.6.1     │
+│     wac-cli    · Spin 4.2.2     │
+│     wasm-tools · Wasmtime      │
 │  2. Build all sub-components    │
 │     cargo build (Rust)          │
 │     npm run build (TypeScript)  │
 │     dotnet build (C#)           │
 │     componentize-py (Python)    │
+│     build.sh (WAT + checks)     │
 │  3. Compose the-calculator.wasm │
+│     Test composed calculator   │
 │  4. spin build → composed .wasm │
 │  5. spin registry push          │
 │     :topic-myfeature-abc1234    │
